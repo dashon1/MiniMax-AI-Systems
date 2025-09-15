@@ -1,0 +1,89 @@
+
+> react_repo@0.0.0 build
+> pnpm install --prefer-offline && rm -rf node_modules/.vite-temp && tsc -b && vite build
+
+Lockfile is up to date, resolution step is skipped
+Already up to date
+
+Done in 1.1s using pnpm v10.12.4
+src/components/GamificationDashboard.tsx:37:35 - error TS2339: Property 'USER_LEVELS' does not exist on type 'GamificationStats'.
+
+37   const nextLevelProgress = stats.USER_LEVELS.find(level => level.pointsRequired > stats.totalPoints)
+                                     ~~~~~~~~~~~
+
+src/components/GamificationDashboard.tsx:236:28 - error TS2339: Property 'USER_LEVELS' does not exist on type 'GamificationStats'.
+
+236                     {stats.USER_LEVELS.map((level, index) => {
+                               ~~~~~~~~~~~
+
+src/components/TaskHistory.tsx:108:9 - error TS2322: Type '"blue" | "green" | "orange" | "red"' is not assignable to type '"blue" | "purple" | "green" | "orange"'.
+  Type '"red"' is not assignable to type '"blue" | "purple" | "green" | "orange"'.
+
+108         glowColor={statusGlowColors[task.status]}
+            ~~~~~~~~~
+
+  src/components/ui/ai-glow-card.tsx:7:3
+    7   glowColor?: 'blue' | 'purple' | 'green' | 'orange'
+        ~~~~~~~~~
+    The expected type comes from property 'glowColor' which is declared here on type 'IntrinsicAttributes & AIGlowCardProps'
+
+src/components/TaskHistory.tsx:112:44 - error TS2322: Type '"blue" | "green" | "orange" | "red"' is not assignable to type '"blue" | "purple" | "green" | "multi"'.
+  Type '"orange"' is not assignable to type '"blue" | "purple" | "green" | "multi"'.
+
+112         <NeuralBackground variant="subtle" color={statusGlowColors[task.status]} />
+                                               ~~~~~
+
+  src/components/ui/neural-background.tsx:7:3
+    7   color?: 'blue' | 'purple' | 'green' | 'multi'
+        ~~~~~
+    The expected type comes from property 'color' which is declared here on type 'IntrinsicAttributes & NeuralBackgroundProps'
+
+src/components/gamification/AIProgressBar.tsx:1:26 - error TS2307: Cannot find module '@/components/ui/progress' or its corresponding type declarations.
+
+1 import { Progress } from '@/components/ui/progress'
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/gamification/UserLevelCard.tsx:3:26 - error TS2307: Cannot find module '@/components/ui/progress' or its corresponding type declarations.
+
+3 import { Progress } from '@/components/ui/progress'
+                           ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+src/components/gamification/UserLevelCard.tsx:18:27 - error TS2339: Property 'USER_LEVELS' does not exist on type 'GamificationStats'.
+
+18   const nextLevel = stats.USER_LEVELS.find(level => level.pointsRequired > totalPoints)
+                             ~~~~~~~~~~~
+
+src/components/welcome/AIWelcomeBanner.tsx:13:3 - error TS2724: '"lucide-react"' has no exported member named 'Refresh'. Did you mean 'RefreshCw'?
+
+13   Refresh,
+     ~~~~~~~
+
+src/contexts/ThemeContext.tsx:13:6 - error TS2322: Type '{ children: ReactNode; attribute: "class"; defaultTheme: string; enableSystem: true; disableTransitionOnChange: false; }' is not assignable to type 'IntrinsicAttributes & ThemeProviderProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & ThemeProviderProps'.
+
+13     <NextThemeProvider
+        ~~~~~~~~~~~~~~~~~
+
+src/hooks/useAIWelcome.ts:226:15 - error TS2551: Property 'newAchievements' does not exist on type 'GamificationStats'. Did you mean 'achievements'?
+
+226     if (stats.newAchievements.length > 0) {
+                  ~~~~~~~~~~~~~~~
+
+  src/hooks/useGamification.ts:32:3
+    32   achievements: Achievement[]
+         ~~~~~~~~~~~~
+    'achievements' is declared here.
+
+src/hooks/useAIWelcome.ts:227:33 - error TS2551: Property 'newAchievements' does not exist on type 'GamificationStats'. Did you mean 'achievements'?
+
+227       const achievement = stats.newAchievements[0]
+                                    ~~~~~~~~~~~~~~~
+
+  src/hooks/useGamification.ts:32:3
+    32   achievements: Achievement[]
+         ~~~~~~~~~~~~
+    'achievements' is declared here.
+
+
+Found 11 errors.
+
