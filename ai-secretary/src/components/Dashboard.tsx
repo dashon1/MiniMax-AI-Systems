@@ -6,11 +6,14 @@ import { TaskHistory } from '@/components/TaskHistory'
 import { AgentOverview } from '@/components/AgentOverview'
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
 import { GamificationDashboard } from '@/components/GamificationDashboard'
+import { VoiceCommandCenter } from '@/components/VoiceCommandCenter'
+import { SuperAgentCollectives } from '@/components/SuperAgentCollectives'
+import { FloatingChatBot } from '@/components/FloatingChatBot'
 import { AIWelcomeBanner } from '@/components/welcome/AIWelcomeBanner'
 import { AchievementNotification } from '@/components/gamification/AchievementNotification'
-import { NeuralBackground } from '@/components/ui/neural-background'
+import { CommandCenterBackground } from '@/components/ui/command-center-background'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { LogOut, User, BarChart3, Bot, MessageSquare, Clock, Trophy, Sparkles } from 'lucide-react'
+import { LogOut, User, BarChart3, Bot, MessageSquare, Clock, Trophy, Sparkles, Mic, Users, Zap, Brain, Target, Shield } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
@@ -20,29 +23,41 @@ export function Dashboard() {
   const handleSignOut = async () => {
     try {
       await signOut()
-      toast.success('Signed out successfully')
+      toast.success('Agent session terminated')
     } catch (error) {
       toast.error('Failed to sign out')
     }
   }
+  
+  const handleVoiceTaskSubmit = (content: string, transcription?: string) => {
+    // This would integrate with the existing task submission system
+    console.log('Voice task submitted:', { content, transcription })
+    toast.success('Voice command processed by Super Agent Group!')
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 relative">
-      {/* Neural background */}
-      <NeuralBackground variant="subtle" color="multi" className="fixed inset-0" />
+    <div className="min-h-screen bg-command-gradient relative overflow-hidden">
+      {/* Command Center Background */}
+      <CommandCenterBackground variant="dynamic" color="command" className="fixed inset-0" />
+      
+      {/* Neural Grid Pattern */}
+      <div className="fixed inset-0 command-grid opacity-20 pointer-events-none" />
       
       {/* Achievement notifications */}
       <AchievementNotification />
       
+      {/* Floating Chat Bot */}
+      <FloatingChatBot />
+      
       {/* Header */}
       <motion.header 
-        className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-40 relative"
+        className="border-b border-command-accent/30 bg-card/90 backdrop-blur-md sticky top-0 z-40 relative"
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
-        {/* Header neural pattern */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-purple-500/5" />
+        {/* Header command pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-command-accent/5 via-transparent to-command-success/5" />
         
         <div className="container mx-auto px-4 py-4 relative">
           <div className="flex items-center justify-between">
@@ -51,22 +66,44 @@ export function Dashboard() {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <motion.div
-                  className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg"
+                  className="relative p-3 bg-gradient-to-br from-command-accent to-command-success rounded-xl shadow-2xl"
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   transition={{ type: 'spring', stiffness: 300 }}
                 >
-                  <Bot className="h-6 w-6 text-white" />
+                  <motion.div
+                    className="absolute inset-0 bg-white/20 rounded-xl"
+                    animate={{
+                      opacity: [0, 0.5, 0],
+                      scale: [1, 1.1, 1]
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: 'easeInOut'
+                    }}
+                  />
+                  <Bot className="h-8 w-8 text-white relative z-10" />
                 </motion.div>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    AI Super Agent
+                  <h1 className="text-3xl font-bold command-title mb-1">
+                    AI Super Agent Group
                   </h1>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    Powered by Neural Network Orchestration
-                  </p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1">
+                      <motion.div
+                        className="w-2 h-2 bg-command-success rounded-full"
+                        animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                      <span className="text-command-success font-medium">Command Center Online</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Sparkles className="h-3 w-3 text-command-accent" />
+                      <span className="text-muted-foreground">Strongest Agent Workforce Active</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -78,18 +115,19 @@ export function Dashboard() {
               transition={{ delay: 0.3, duration: 0.5 }}
             >
               <ThemeToggle />
-              <div className="flex items-center gap-2 text-sm text-muted-foreground px-3 py-2 bg-muted/50 rounded-lg">
-                <User className="h-4 w-4" />
-                {user?.email}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 bg-card/60 backdrop-blur-sm rounded-lg border border-command-accent/20">
+                <Shield className="h-4 w-4 text-command-accent" />
+                <span>Agent:</span>
+                <span className="font-mono text-command-accent">{user?.email}</span>
               </div>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleSignOut}
-                className="hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors"
+                className="hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-colors border-command-danger/30"
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                Terminate Session
               </Button>
             </motion.div>
           </div>
@@ -112,46 +150,53 @@ export function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.6 }}
         >
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-card/80 backdrop-blur-sm border border-border/50">
+          <Tabs defaultValue="command" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-6 bg-card/80 backdrop-blur-sm border-2 border-command-accent/20 h-14">
               <TabsTrigger 
-                value="overview" 
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/20 data-[state=active]:to-purple-500/20"
+                value="command" 
+                className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-command-accent/20 data-[state=active]:to-command-success/20 data-[state=active]:text-command-accent"
               >
-                <Bot className="h-4 w-4" />
-                Overview
+                <Target className="h-4 w-4" />
+                <span className="text-xs font-medium">Command</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="gamification" 
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-blue-500/20"
+                value="collectives" 
+                className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-command-success/20 data-[state=active]:to-command-accent/20 data-[state=active]:text-command-success"
               >
-                <Trophy className="h-4 w-4" />
-                AI Mastery
+                <Users className="h-4 w-4" />
+                <span className="text-xs font-medium">Collectives</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="voice" 
+                className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-purple-400"
+              >
+                <Mic className="h-4 w-4" />
+                <span className="text-xs font-medium">Voice</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="analytics" 
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-pink-500/20"
+                className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/20 data-[state=active]:to-red-500/20 data-[state=active]:text-orange-400"
               >
                 <BarChart3 className="h-4 w-4" />
-                Analytics
+                <span className="text-xs font-medium">Analytics</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="submit" 
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/20 data-[state=active]:to-red-500/20"
+                value="mastery" 
+                className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-teal-500/20 data-[state=active]:text-green-400"
               >
-                <MessageSquare className="h-4 w-4" />
-                Submit Task
+                <Trophy className="h-4 w-4" />
+                <span className="text-xs font-medium">Mastery</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500/20 data-[state=active]:to-teal-500/20"
+                className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-blue-400"
               >
                 <Clock className="h-4 w-4" />
-                History
+                <span className="text-xs font-medium">History</span>
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="command" className="space-y-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -172,13 +217,27 @@ export function Dashboard() {
               </motion.div>
             </TabsContent>
             
-            <TabsContent value="gamification">
+            <TabsContent value="collectives">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <GamificationDashboard />
+                <SuperAgentCollectives />
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="voice">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+              >
+                <VoiceCommandCenter onTaskSubmit={handleVoiceTaskSubmit} />
+                <div className="lg:max-h-[600px] lg:overflow-hidden">
+                  <TaskHistory />
+                </div>
               </motion.div>
             </TabsContent>
             
@@ -192,13 +251,13 @@ export function Dashboard() {
               </motion.div>
             </TabsContent>
             
-            <TabsContent value="submit">
+            <TabsContent value="mastery">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <TaskSubmission />
+                <GamificationDashboard />
               </motion.div>
             </TabsContent>
             

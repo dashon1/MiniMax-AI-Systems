@@ -9,34 +9,34 @@ interface NeuralBackgroundProps {
 
 const colorSchemes = {
   blue: {
-    primary: 'rgba(59, 130, 246, 0.1)',
-    secondary: 'rgba(59, 130, 246, 0.05)',
-    accent: 'rgba(147, 197, 253, 0.1)'
+    primary: 'rgba(0, 212, 255, 0.15)',
+    secondary: 'rgba(0, 212, 255, 0.08)',
+    accent: 'rgba(0, 212, 255, 0.25)'
   },
   purple: {
-    primary: 'rgba(168, 85, 247, 0.1)',
-    secondary: 'rgba(168, 85, 247, 0.05)',
-    accent: 'rgba(196, 181, 253, 0.1)'
+    primary: 'rgba(168, 85, 247, 0.15)',
+    secondary: 'rgba(168, 85, 247, 0.08)',
+    accent: 'rgba(168, 85, 247, 0.25)'
   },
   green: {
-    primary: 'rgba(34, 197, 94, 0.1)',
-    secondary: 'rgba(34, 197, 94, 0.05)',
-    accent: 'rgba(134, 239, 172, 0.1)'
+    primary: 'rgba(0, 255, 136, 0.15)',
+    secondary: 'rgba(0, 255, 136, 0.08)',
+    accent: 'rgba(0, 255, 136, 0.25)'
   },
   orange: {
-    primary: 'rgba(251, 146, 60, 0.1)',
-    secondary: 'rgba(251, 146, 60, 0.05)',
-    accent: 'rgba(253, 186, 116, 0.1)'
+    primary: 'rgba(251, 146, 60, 0.15)',
+    secondary: 'rgba(251, 146, 60, 0.08)',
+    accent: 'rgba(251, 146, 60, 0.25)'
   },
   red: {
-    primary: 'rgba(239, 68, 68, 0.1)',
-    secondary: 'rgba(239, 68, 68, 0.05)',
-    accent: 'rgba(252, 165, 165, 0.1)'
+    primary: 'rgba(255, 0, 64, 0.15)',
+    secondary: 'rgba(255, 0, 64, 0.08)',
+    accent: 'rgba(255, 0, 64, 0.25)'
   },
   multi: {
-    primary: 'rgba(59, 130, 246, 0.08)',
-    secondary: 'rgba(168, 85, 247, 0.08)',
-    accent: 'rgba(34, 197, 94, 0.08)'
+    primary: 'rgba(0, 212, 255, 0.12)',
+    secondary: 'rgba(168, 85, 247, 0.12)',
+    accent: 'rgba(0, 255, 136, 0.12)'
   }
 }
 

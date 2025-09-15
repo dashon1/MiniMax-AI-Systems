@@ -24,28 +24,44 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+    
+    /* Super Agent Command Center Colors */
+    --command-bg: 222 47% 11%;
+    --command-accent: 200 100% 56%;
+    --command-success: 158 100% 50%;
+    --command-warning: 44 100% 50%;
+    --command-danger: 0 100% 63%;
+    --neural-glow: 200 100% 70%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 10 2% 4%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 26 47% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 26 47% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 200 100% 56%;
+    --primary-foreground: 10 2% 4%;
+    --secondary: 26 47% 16%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 26 47% 16%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 26 47% 16%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 100% 63%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --border: 26 47% 16%;
+    --input: 26 47% 16%;
+    --ring: 200 100% 70%;
+    
+    /* Enhanced Command Center Dark Mode */
+    --command-bg: 10 2% 4%;
+    --command-accent: 200 100% 70%;
+    --command-success: 158 100% 70%;
+    --command-warning: 44 100% 70%;
+    --command-danger: 0 100% 70%;
+    --neural-glow: 200 100% 80%;
   }
 }
 
@@ -55,6 +71,21 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Command Center Typography */
+  .command-title {
+    @apply text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-green-400 bg-clip-text text-transparent;
+  }
+  
+  .neural-glow {
+    box-shadow: 0 0 20px hsl(var(--neural-glow) / 0.3);
+  }
+  
+  .holographic-border {
+    border: 1px solid hsl(var(--command-accent) / 0.3);
+    box-shadow: inset 0 0 10px hsl(var(--command-accent) / 0.1);
   }
 }
 
@@ -78,5 +109,58 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+  
+  /* Command Center Animations */
+  .power-pulse {
+    animation: power-pulse 2s ease-in-out infinite;
+  }
+  
+  .neural-flow {
+    animation: neural-flow 3s linear infinite;
+  }
+  
+  .holographic-flicker {
+    animation: holographic-flicker 4s ease-in-out infinite;
+  }
+  
+  @keyframes power-pulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+  
+  @keyframes neural-flow {
+    0% { transform: translateX(-100%); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateX(100%); opacity: 0; }
+  }
+  
+  @keyframes holographic-flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+  
+  /* Command Center Grid */
+  .command-grid {
+    background-image: 
+      linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  /* Agent Group Power Indicators */
+  .agent-power-high {
+    background: linear-gradient(135deg, #00FF88 0%, #00D4FF 100%);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+  }
+  
+  .agent-power-medium {
+    background: linear-gradient(135deg, #00D4FF 0%, #0099CC 100%);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+  }
+  
+  .agent-power-active {
+    background: linear-gradient(135deg, #FF0040 0%, #CC0000 100%);
+    box-shadow: 0 0 25px rgba(255, 0, 64, 0.5);
   }
 }
