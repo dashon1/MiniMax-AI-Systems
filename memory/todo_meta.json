@@ -3,45 +3,38 @@
     "Coordinator": {
       "1": {
         "id": "1",
-        "content": "CRITICAL FIX: Voice Tab Navigation",
-        "details": "EXECUTING: Investigate current voice tab navigation flow and implement prominent voice interaction access from front page. Ensure seamless user journey to voice capabilities.",
-        "status": "in_progress",
+        "content": "Add MVP Agent to the agent lineup",
+        "details": "Integrate MVP Agent into both existing versions with proper descriptions and capabilities showcase",
+        "status": "pending",
         "priority": "high"
       },
       "2": {
         "id": "2",
-        "content": "INTEGRATION: Customer Service Bot & Lead Capture",
-        "details": "EXECUTING: Implement intelligent customer service chatbot with FAQ automation, lead capture system, real-time support integration with existing agent workflow, and seamless handoff capabilities.",
-        "status": "in_progress",
+        "content": "Create unified AEROS platform combining both versions",
+        "details": "Merge the Landing Page version (enterprise showcase) and Chat Interface version (brain-centered) into a single cohesive platform",
+        "status": "pending",
         "priority": "high"
       },
       "3": {
         "id": "3",
-        "content": "TRANSFORMATION: Jarvis Meets 2025 Superman Agent Design",
-        "details": "EXECUTING: Complete visual transformation to Jarvis/Iron Man inspired command center with dark futuristic interface, holographic UI elements, power indicators, agent strength visualization, and Superman-level visual impact showcasing strongest agent workforce.",
-        "status": "in_progress",
+        "content": "Implement Standard and Pro tier structure",
+        "details": "Design and implement two-tier system: Standard (free/basic features) and Pro (advanced enterprise features)",
+        "status": "pending",
         "priority": "high"
       },
       "4": {
         "id": "4",
-        "content": "ADMIN SYSTEM: Agent Management & Control Panel",
-        "details": "EXECUTING: Build comprehensive admin system with agent skill management, tool configuration, fine-tuning controls, performance monitoring, role-based access, and real-time agent orchestration dashboard.",
-        "status": "in_progress",
-        "priority": "high"
+        "content": "Build credit-based pricing system",
+        "details": "Implement dynamic credit system based on task complexity with proper billing integration",
+        "status": "pending",
+        "priority": "medium"
       },
       "5": {
         "id": "5",
-        "content": "SPECIALIZATION: Power-Focused Subsections",
-        "details": "EXECUTING: Create specialized agent subsections (Research & Analysis, Creative & Content, Business & Strategy, Technical & Development, Data & Automation) with power-focused capabilities showcase and progressive disclosure.",
-        "status": "in_progress",
-        "priority": "high"
-      },
-      "6": {
-        "id": "6",
-        "content": "INTEGRATION & TESTING: Super Agent Platform",
-        "details": "Final integration testing ensuring all new features work together: 1) Voice navigation flow testing, 2) Customer service bot integration, 3) Admin panel functionality, 4) Specialized section navigation, 5) Overall user experience validation, 6) Performance optimization, 7) Mobile responsiveness",
+        "content": "Enhance brain visualization with all 8 agents",
+        "details": "Update the AEROS brain concept to properly display all agents including MVP Agent with proper positioning and descriptions",
         "status": "pending",
-        "priority": "medium"
+        "priority": "high"
       }
     }
   }
