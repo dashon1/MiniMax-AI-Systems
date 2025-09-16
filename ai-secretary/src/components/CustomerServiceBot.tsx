@@ -110,7 +110,7 @@ export function CustomerServiceBot({ isOpen, onClose, onLeadCapture }: CustomerS
       }
       
       if (response.escalateToHuman) {
-        toast.info('Escalating to human agent...', { icon: '👥' })
+        toast.success('Escalating to human agent...', { icon: '👥' })
       }
       
       setIsTyping(false)

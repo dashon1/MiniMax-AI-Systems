@@ -194,7 +194,7 @@ export function VoiceCommandCenter({ className, onTaskSubmit }: VoiceCommandCent
     setIsPlaying(false)
     setAudioLevel(0)
     setProcessingStats(null)
-    toast.info('Voice session cleared')
+    toast.success('Voice session cleared')
   }
 
   return (

@@ -17,7 +17,11 @@ import {
   Cpu, 
   Bot,
   TrendingUp,
-  Gauge
+  Gauge,
+  Code,
+  Search,
+  FileText,
+  Rocket
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -26,21 +30,33 @@ const agentIcons = {
   genspark: Brain,
   abacus: Zap, 
   minimax: Lightbulb,
-  manus: Building2
+  manus: Building2,
+  mvp_agent: Rocket,
+  fullstack_dev: Code,
+  deep_research: Search,
+  report_writer: FileText
 }
 
 const agentColors = {
   genspark: 'from-blue-500 to-blue-600',
   abacus: 'from-green-500 to-green-600', 
   minimax: 'from-purple-500 to-purple-600',
-  manus: 'from-orange-500 to-orange-600'
+  manus: 'from-orange-500 to-orange-600',
+  mvp_agent: 'from-cyan-500 to-cyan-600',
+  fullstack_dev: 'from-indigo-500 to-indigo-600',
+  deep_research: 'from-teal-500 to-teal-600',
+  report_writer: 'from-pink-500 to-pink-600'
 }
 
 const agentSpecializations = {
   genspark: ['Research Excellence', 'Data Analysis', 'Market Intelligence', 'Competitive Analysis'],
   abacus: ['Financial Modeling', 'Statistical Analysis', 'Performance Metrics', 'Risk Assessment'],
   minimax: ['Creative Solutions', 'Content Generation', 'Innovation Strategy', 'Design Thinking'],
-  manus: ['Business Operations', 'Process Optimization', 'Strategic Planning', 'Automation']
+  manus: ['Business Operations', 'Process Optimization', 'Strategic Planning', 'Automation'],
+  mvp_agent: ['Product Validation', 'Startup Strategy', 'MVP Development', 'Market Analysis'],
+  fullstack_dev: ['Web Development', 'System Architecture', 'Technical Implementation', 'Full-Stack Solutions'],
+  deep_research: ['Comprehensive Research', 'In-depth Analysis', 'Investigation', 'Data Synthesis'],
+  report_writer: ['Professional Reports', 'Documentation', 'Analytical Writing', 'Content Synthesis']
 }
 
 function AgentCard({ agent, index }: { agent: any; index: number }) {
@@ -353,6 +369,149 @@ export function AgentOverview() {
       </CardHeader>
       
       <CardContent className="relative">
+        {/* AEROS Brain Neural Network */}
+        <div className="col-span-full mb-8">
+          <div className="relative p-8 bg-gradient-to-br from-command-accent/10 via-purple-500/5 to-command-success/10 rounded-2xl border border-command-accent/20 overflow-hidden">
+            <div className="absolute inset-0 neural-grid opacity-30" />
+            <div className="relative z-10">
+              <h3 className="text-xl font-bold command-title mb-4 text-center flex items-center justify-center gap-3">
+                <motion.div
+                  className="p-2 bg-gradient-to-br from-command-accent to-purple-500 rounded-lg"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: 'easeInOut'
+                  }}
+                >
+                  <Brain className="h-6 w-6 text-white" />
+                </motion.div>
+                AEROS Neural Collective - 8 Agent Brain Network
+              </h3>
+              <p className="text-center text-muted-foreground mb-6">
+                Advanced multi-agent neural network operating as unified intelligence with specialized cognitive domains
+              </p>
+              
+              {/* Neural Network Visualization */}
+              <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto">
+                {agents.slice(0, 4).map((agent, index) => {
+                  const Icon = agentIcons[agent.agent_name as keyof typeof agentIcons] || Brain
+                  const color = agentColors[agent.agent_name as keyof typeof agentColors]
+                  return (
+                    <motion.div
+                      key={agent.id}
+                      className="flex flex-col items-center gap-2"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                    >
+                      <motion.div
+                        className={cn(
+                          "p-3 rounded-full bg-gradient-to-br shadow-lg relative",
+                          color
+                        )}
+                        whileHover={{ scale: 1.1 }}
+                        animate={{
+                          boxShadow: [
+                            '0 0 20px rgba(0,255,255,0.3)',
+                            '0 0 30px rgba(0,255,255,0.6)',
+                            '0 0 20px rgba(0,255,255,0.3)'
+                          ]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          delay: index * 0.5
+                        }}
+                      >
+                        <Icon className="h-5 w-5 text-white" />
+                      </motion.div>
+                      <span className="text-xs font-medium text-center capitalize">
+                        {agent.agent_name.replace('_', ' ')}
+                      </span>
+                    </motion.div>
+                  )
+                })}
+              </div>
+              
+              <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto mt-6">
+                {agents.slice(4, 8).map((agent, index) => {
+                  const Icon = agentIcons[agent.agent_name as keyof typeof agentIcons] || Brain
+                  const color = agentColors[agent.agent_name as keyof typeof agentColors]
+                  return (
+                    <motion.div
+                      key={agent.id}
+                      className="flex flex-col items-center gap-2"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: (index + 4) * 0.1 }}
+                    >
+                      <motion.div
+                        className={cn(
+                          "p-3 rounded-full bg-gradient-to-br shadow-lg relative",
+                          color
+                        )}
+                        whileHover={{ scale: 1.1 }}
+                        animate={{
+                          boxShadow: [
+                            '0 0 20px rgba(0,255,255,0.3)',
+                            '0 0 30px rgba(0,255,255,0.6)',
+                            '0 0 20px rgba(0,255,255,0.3)'
+                          ]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          delay: (index + 4) * 0.5
+                        }}
+                      >
+                        <Icon className="h-5 w-5 text-white" />
+                      </motion.div>
+                      <span className="text-xs font-medium text-center capitalize">
+                        {agent.agent_name.replace('_', ' ')}
+                      </span>
+                    </motion.div>
+                  )
+                })}
+              </div>
+              
+              {/* Neural Connections */}
+              <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
+                {[...Array(12)].map((_, i) => (
+                  <motion.line
+                    key={i}
+                    x1={`${20 + (i * 7)}%`}
+                    y1="30%"
+                    x2={`${80 - (i * 7)}%`}
+                    y2="70%"
+                    stroke="url(#neural-gradient)"
+                    strokeWidth="1"
+                    opacity="0.6"
+                    animate={{
+                      strokeDasharray: ['0 100', '50 50', '100 0'],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      delay: i * 0.2
+                    }}
+                  />
+                ))}
+                <defs>
+                  <linearGradient id="neural-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="cyan" stopOpacity="0.8" />
+                    <stop offset="50%" stopColor="purple" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="cyan" stopOpacity="0.8" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {agents.map((agent, index) => (
             <AgentCard key={agent.id} agent={agent} index={index} />

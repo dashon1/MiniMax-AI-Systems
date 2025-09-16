@@ -11,9 +11,10 @@ import { SuperAgentCollectives } from '@/components/SuperAgentCollectives'
 import { FloatingChatBot } from '@/components/FloatingChatBot'
 import { AIWelcomeBanner } from '@/components/welcome/AIWelcomeBanner'
 import { AchievementNotification } from '@/components/gamification/AchievementNotification'
+import { TierManagement } from '@/components/TierManagement'
 import { CommandCenterBackground } from '@/components/ui/command-center-background'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { LogOut, User, BarChart3, Bot, MessageSquare, Clock, Trophy, Sparkles, Mic, Users, Zap, Brain, Target, Shield } from 'lucide-react'
+import { LogOut, User, BarChart3, Bot, MessageSquare, Clock, Trophy, Sparkles, Mic, Users, Zap, Brain, Target, Shield, Crown, CreditCard } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
@@ -88,7 +89,7 @@ export function Dashboard() {
                 </motion.div>
                 <div>
                   <h1 className="text-3xl font-bold command-title mb-1">
-                    AI Super Agent Group
+                    AEROS Neural Collective
                   </h1>
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-1">
@@ -97,11 +98,11 @@ export function Dashboard() {
                         animate={{ scale: [1, 1.2, 1], opacity: [1, 0.7, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
                       />
-                      <span className="text-command-success font-medium">Command Center Online</span>
+                      <span className="text-command-success font-medium">8 Agent Brain Network Online</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Sparkles className="h-3 w-3 text-command-accent" />
-                      <span className="text-muted-foreground">Strongest Agent Workforce Active</span>
+                      <span className="text-muted-foreground">Unified Intelligence Platform</span>
                     </div>
                   </div>
                 </div>
@@ -115,6 +116,17 @@ export function Dashboard() {
               transition={{ delay: 0.3, duration: 0.5 }}
             >
               <ThemeToggle />
+              
+              {/* Credit Status */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 bg-card/60 backdrop-blur-sm rounded-lg border border-command-accent/20">
+                <CreditCard className="h-4 w-4 text-command-accent" />
+                <span>Credits:</span>
+                <span className="font-mono text-command-accent">45/100</span>
+                <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden ml-2">
+                  <div className="h-full bg-command-accent rounded-full" style={{ width: '45%' }} />
+                </div>
+              </div>
+              
               <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 bg-card/60 backdrop-blur-sm rounded-lg border border-command-accent/20">
                 <Shield className="h-4 w-4 text-command-accent" />
                 <span>Agent:</span>
@@ -151,7 +163,7 @@ export function Dashboard() {
           transition={{ delay: 0.5, duration: 0.6 }}
         >
           <Tabs defaultValue="command" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-card/80 backdrop-blur-sm border-2 border-command-accent/20 h-14">
+            <TabsList className="grid w-full grid-cols-7 bg-card/80 backdrop-blur-sm border-2 border-command-accent/20 h-14">
               <TabsTrigger 
                 value="command" 
                 className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-command-accent/20 data-[state=active]:to-command-success/20 data-[state=active]:text-command-accent"
@@ -172,6 +184,13 @@ export function Dashboard() {
               >
                 <Mic className="h-4 w-4" />
                 <span className="text-xs font-medium">Voice</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="tier" 
+                className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500/20 data-[state=active]:to-orange-500/20 data-[state=active]:text-yellow-400"
+              >
+                <Crown className="h-4 w-4" />
+                <span className="text-xs font-medium">Tier</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="analytics" 
@@ -238,6 +257,16 @@ export function Dashboard() {
                 <div className="lg:max-h-[600px] lg:overflow-hidden">
                   <TaskHistory />
                 </div>
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="tier">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <TierManagement currentTier="standard" creditsUsed={45} creditsTotal={100} />
               </motion.div>
             </TabsContent>
             
