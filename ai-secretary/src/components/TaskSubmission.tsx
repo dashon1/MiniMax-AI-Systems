@@ -1,3 +1,4 @@
+import { useSubscription } from '@/contexts/SubscriptionContext'
 import { useState } from 'react'
 import { useTasks, useTaskRouter, useAgents } from '@/hooks/useTasks'
 import { useGamification } from '@/hooks/useGamification'
@@ -9,21 +10,29 @@ import { Badge } from '@/components/ui/badge'
 import { AILoadingSpinner } from '@/components/ui/ai-loading-spinner'
 import { CommandCenterBackground } from '@/components/ui/command-center-background'
 import { AIGlowCard } from '@/components/ui/ai-glow-card'
-import { Loader2, Send, Brain, Zap, Lightbulb, Building2, Sparkles, Target, Cpu, Users, Shield, Activity } from 'lucide-react'
+import { Loader2, Send, Brain, Zap, Lightbulb, Building2, Sparkles, Target, Cpu, Users, Shield, Activity, CreditCard, Code, Search, FileText, Rocket } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const agentIcons = {
   genspark: Brain,
   abacus: Zap, 
   minimax: Lightbulb,
-  manus: Building2
+  manus: Building2,
+  mvp_agent: Rocket,
+  fullstack_dev: Code,
+  deep_research: Search,
+  report_writer: FileText
 }
 
 const agentColors = {
   genspark: 'bg-blue-500',
   abacus: 'bg-green-500', 
   minimax: 'bg-purple-500',
-  manus: 'bg-orange-500'
+  manus: 'bg-orange-500',
+  mvp_agent: 'bg-cyan-500',
+  fullstack_dev: 'bg-indigo-500',
+  deep_research: 'bg-teal-500',
+  report_writer: 'bg-pink-500'
 }
 
 export function TaskSubmission() {
@@ -35,8 +44,14 @@ export function TaskSubmission() {
   const { routing, routeTask, isRouting, clearRouting } = useTaskRouter()
   const { agents } = useAgents()
   const { calculateTaskComplexity } = useGamification()
+  const { useCredits, getRemainingCredits, isNearCreditLimit } = useSubscription()
   
   const taskComplexity = taskContent ? calculateTaskComplexity(taskContent) : 0
+  
+  // Calculate estimated credit cost based on task complexity
+  const estimatedCreditCost = Math.max(1, Math.ceil(taskComplexity / 10))
+  const remainingCredits = getRemainingCredits()
+  const canAffordTask = remainingCredits >= estimatedCreditCost
 
   const handlePreviewRouting = () => {
     if (!taskContent.trim()) return
@@ -47,8 +62,12 @@ export function TaskSubmission() {
     })
   }
 
-  const handleSubmit = () => {
-    if (!taskContent.trim()) return
+  const handleSubmit = async () => {
+    if (!taskContent.trim() || !canAffordTask) return
+    
+    // Use credits before submitting task
+    const success = await useCredits(estimatedCreditCost)
+    if (!success) return
     
     createTask({
       taskContent,
@@ -135,22 +154,49 @@ export function TaskSubmission() {
                   Real-time
                 </Badge>
               </div>
-              <Badge 
-                variant="outline" 
-                className={`${taskComplexity > 70 ? 'bg-red-500/10 text-red-400 border-red-500/20' : 
-                           taskComplexity > 40 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
-                           'bg-green-500/10 text-green-400 border-green-500/20'} font-bold`}
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant="outline" 
+                  className={`${taskComplexity > 70 ? 'bg-red-500/10 text-red-400 border-red-500/20' : 
+                             taskComplexity > 40 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
+                             'bg-green-500/10 text-green-400 border-green-500/20'} font-bold`}
+                >
+                  {taskComplexity > 70 ? 'HIGH' : taskComplexity > 40 ? 'MEDIUM' : 'LOW'} COMPLEXITY ({taskComplexity}%)
+                </Badge>
+                <Badge 
+                  variant="outline" 
+                  className={`${!canAffordTask ? 'bg-red-500/10 text-red-400 border-red-500/20' : 
+                             'bg-command-accent/10 text-command-accent border-command-accent/20'} font-bold`}
+                >
+                  <CreditCard className="h-3 w-3 mr-1" />
+                  {estimatedCreditCost} Credits
+                </Badge>
+              </div>
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <span>Agent Group Recommendation:</span>
+                <span className="text-command-accent font-medium">
+                  {taskComplexity > 70 ? 'Full Collective Deployment' : 
+                   taskComplexity > 40 ? 'Multi-Agent Coordination' : 'Specialized Agent Assignment'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <span>Remaining Credits:</span>
+                <span className={`font-medium ${remainingCredits < 10 ? 'text-red-400' : 'text-command-success'}`}>
+                  {remainingCredits}
+                </span>
+              </div>
+            </div>
+            {!canAffordTask && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400"
               >
-                {taskComplexity > 70 ? 'HIGH' : taskComplexity > 40 ? 'MEDIUM' : 'LOW'} COMPLEXITY ({taskComplexity}%)
-              </Badge>
-            </div>
-            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Agent Group Recommendation:</span>
-              <span className="text-command-accent font-medium">
-                {taskComplexity > 70 ? 'Full Collective Deployment' : 
-                 taskComplexity > 40 ? 'Multi-Agent Coordination' : 'Specialized Agent Assignment'}
-              </span>
-            </div>
+                Insufficient credits for this task. Please upgrade your plan or wait for credit refresh.
+              </motion.div>
+            )}
           </motion.div>
         )}
         
@@ -243,18 +289,27 @@ export function TaskSubmission() {
           <motion.div className="flex-1" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}>
             <Button
               onClick={handleSubmit}
-              disabled={!taskContent.trim() || isCreating}
-              className="w-full bg-gradient-to-r from-command-accent to-command-success hover:from-command-accent/80 hover:to-command-success/80 text-white font-semibold shadow-lg border-0"
+              disabled={!taskContent.trim() || isCreating || !canAffordTask}
+              className={`w-full font-semibold shadow-lg border-0 ${
+                !canAffordTask 
+                  ? 'bg-red-500/20 text-red-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-command-accent to-command-success hover:from-command-accent/80 hover:to-command-success/80 text-white'
+              }`}
             >
               {isCreating ? (
                 <div className="flex items-center gap-2">
                   <AILoadingSpinner size="sm" variant="processing" />
                   <span>Deploying to Collective...</span>
                 </div>
+              ) : !canAffordTask ? (
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  <span>Insufficient Credits ({estimatedCreditCost} needed)</span>
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <Send className="h-4 w-4" />
-                  <span>Deploy to Super Agent Group</span>
+                  <span>Deploy to Neural Collective ({estimatedCreditCost} credits)</span>
                 </div>
               )}
             </Button>

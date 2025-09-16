@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthPage } from '@/components/AuthPage'
@@ -40,33 +41,35 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <AppContent />
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              className: 'bg-card text-card-foreground border border-border',
-              style: {
-                background: 'hsl(var(--card))',
-                color: 'hsl(var(--card-foreground))',
-                border: '1px solid hsl(var(--border))',
-              },
-              success: {
-                duration: 3000,
-                iconTheme: {
-                  primary: '#10b981',
-                  secondary: 'hsl(var(--card-foreground))',
+          <SubscriptionProvider>
+            <AppContent />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                className: 'bg-card text-card-foreground border border-border',
+                style: {
+                  background: 'hsl(var(--card))',
+                  color: 'hsl(var(--card-foreground))',
+                  border: '1px solid hsl(var(--border))',
                 },
-              },
-              error: {
-                duration: 5000,
-                iconTheme: {
-                  primary: '#ef4444',
-                  secondary: 'hsl(var(--card-foreground))',
+                success: {
+                  duration: 3000,
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: 'hsl(var(--card-foreground))',
+                  },
                 },
-              },
-            }}
-          />
+                error: {
+                  duration: 5000,
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: 'hsl(var(--card-foreground))',
+                  },
+                },
+              }}
+            />
+          </SubscriptionProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

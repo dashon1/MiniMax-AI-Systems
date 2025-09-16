@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useSubscription } from '@/contexts/SubscriptionContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,35 +22,46 @@ import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
 interface TierManagementProps {
-  currentTier?: 'standard' | 'pro' | 'enterprise'
-  creditsUsed?: number
-  creditsTotal?: number
   className?: string
 }
 
-export function TierManagement({ 
-  currentTier = 'standard', 
-  creditsUsed = 45, 
-  creditsTotal = 100,
-  className 
-}: TierManagementProps) {
-  const { user } = useAuth()
+export function TierManagement({ className }: TierManagementProps) {
+  const { subscription, loading, upgradeToProTier, getRemainingCredits, getCreditUsagePercentage, isProTier, isNearCreditLimit } = useSubscription()
   const [isUpgrading, setIsUpgrading] = useState(false)
   
-  const creditPercentage = Math.round((creditsUsed / creditsTotal) * 100)
-  const isNearLimit = creditPercentage > 80
-  const isOverLimit = creditPercentage > 95
+  if (loading) {
+    return (
+      <div className={cn("flex items-center justify-center py-8", className)}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-command-accent"></div>
+      </div>
+    )
+  }
+  
+  if (!subscription) {
+    return (
+      <div className={cn("text-center py-8", className)}>
+        <p className="text-muted-foreground">No subscription found. Please contact support.</p>
+      </div>
+    )
+  }
+  
+  const currentTier = subscription.plan_type
+  const creditsUsed = subscription.credits_used_this_month
+  const creditsTotal = subscription.credit_limit
+  const creditPercentage = getCreditUsagePercentage()
+  const nearLimit = isNearCreditLimit()
+  const overLimit = creditPercentage > 95
   
   const handleUpgrade = async (targetTier: string) => {
-    setIsUpgrading(true)
-    try {
-      // Simulate upgrade process
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      toast.success(`Successfully upgraded to ${targetTier} tier!`)
-    } catch (error) {
-      toast.error('Upgrade failed. Please try again.')
-    } finally {
-      setIsUpgrading(false)
+    if (targetTier === 'pro') {
+      setIsUpgrading(true)
+      try {
+        await upgradeToProTier()
+      } catch (error) {
+        toast.error('Upgrade failed. Please try again.')
+      } finally {
+        setIsUpgrading(false)
+      }
     }
   }
   
@@ -166,26 +177,26 @@ export function TierManagement({
               value={creditPercentage} 
               className={cn(
                 "h-2",
-                isOverLimit ? "bg-red-500/20" : isNearLimit ? "bg-yellow-500/20" : "bg-green-500/20"
+                overLimit ? "bg-red-500/20" : nearLimit ? "bg-yellow-500/20" : "bg-green-500/20"
               )}
             />
             <div className="flex items-center justify-between text-xs">
               <span className={cn(
                 "font-medium",
-                isOverLimit ? "text-red-400" : isNearLimit ? "text-yellow-400" : "text-green-400"
+                overLimit ? "text-red-400" : nearLimit ? "text-yellow-400" : "text-green-400"
               )}>
                 {creditPercentage}% used
               </span>
-              {isNearLimit && (
+              {nearLimit && (
                 <span className="text-muted-foreground">
-                  {isOverLimit ? 'Credit limit exceeded' : 'Approaching limit'}
+                  {overLimit ? 'Credit limit exceeded' : 'Approaching limit'}
                 </span>
               )}
             </div>
           </div>
           
           {/* Upgrade Prompt */}
-          {currentTier === 'standard' && isNearLimit && (
+          {currentTier === 'standard' && nearLimit && (
             <motion.div
               className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20"
               initial={{ opacity: 0, y: 10 }}

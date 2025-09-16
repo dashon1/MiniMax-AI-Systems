@@ -11,6 +11,7 @@ import { SuperAgentCollectives } from '@/components/SuperAgentCollectives'
 import { FloatingChatBot } from '@/components/FloatingChatBot'
 import { AIWelcomeBanner } from '@/components/welcome/AIWelcomeBanner'
 import { AchievementNotification } from '@/components/gamification/AchievementNotification'
+import { useSubscription } from '@/contexts/SubscriptionContext'
 import { TierManagement } from '@/components/TierManagement'
 import { CommandCenterBackground } from '@/components/ui/command-center-background'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -20,6 +21,7 @@ import toast from 'react-hot-toast'
 
 export function Dashboard() {
   const { user, signOut } = useAuth()
+  const { subscription, getRemainingCredits, getCreditUsagePercentage, isProTier } = useSubscription()
 
   const handleSignOut = async () => {
     try {
@@ -121,10 +123,18 @@ export function Dashboard() {
               <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 bg-card/60 backdrop-blur-sm rounded-lg border border-command-accent/20">
                 <CreditCard className="h-4 w-4 text-command-accent" />
                 <span>Credits:</span>
-                <span className="font-mono text-command-accent">45/100</span>
+                <span className="font-mono text-command-accent">
+                  {subscription ? `${getRemainingCredits()}/${subscription.credit_limit}` : '0/100'}
+                </span>
                 <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden ml-2">
-                  <div className="h-full bg-command-accent rounded-full" style={{ width: '45%' }} />
+                  <div 
+                    className="h-full bg-command-accent rounded-full transition-all duration-300" 
+                    style={{ width: `${subscription ? getCreditUsagePercentage() : 0}%` }} 
+                  />
                 </div>
+                {isProTier() && (
+                  <Crown className="h-3 w-3 text-yellow-400 ml-1" />
+                )}
               </div>
               
               <div className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 bg-card/60 backdrop-blur-sm rounded-lg border border-command-accent/20">
@@ -266,7 +276,7 @@ export function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <TierManagement currentTier="standard" creditsUsed={45} creditsTotal={100} />
+                <TierManagement />
               </motion.div>
             </TabsContent>
             
