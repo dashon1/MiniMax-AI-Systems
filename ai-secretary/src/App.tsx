@@ -17,6 +17,8 @@ import { APITestingPlayground } from '@/pages/APITestingPlayground'
 import { UserDashboard } from '@/pages/UserDashboard'
 import { Toaster } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
+import { AuthDebugger } from '@/components/AuthDebugger'
+import { PerformanceMonitor } from '@/components/PerformanceMonitor'
 
 // Create a client
 const queryClient = new QueryClient({
@@ -75,6 +77,14 @@ function App() {
           <SubscriptionProvider>
             <Router>
               <AppContent />
+            {/* Debug Tools - Only in development */}
+            {import.meta.env.DEV && (
+              <>
+                <AuthDebugger />
+                <PerformanceMonitor />
+              </>
+            )}
+            
             <Toaster
               position="top-right"
               toastOptions={{

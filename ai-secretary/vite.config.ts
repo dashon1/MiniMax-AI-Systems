@@ -18,5 +18,35 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['react', 'react-dom'],
+          'supabase': ['@supabase/supabase-js'],
+          'animations': ['framer-motion'],
+          'router': ['react-router-dom'],
+          'query': ['@tanstack/react-query']
+        }
+      }
+    },
+    target: 'esnext',
+    minify: 'esbuild',
+    chunkSizeWarningLimit: 800,
+    sourcemap: false
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      '@supabase/supabase-js',
+      'framer-motion',
+      'react-router-dom'
+    ]
+  },
+  esbuild: {
+    legalComments: 'none',
+    treeShaking: true
+  }
 })
 

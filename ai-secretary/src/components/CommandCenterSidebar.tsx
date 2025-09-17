@@ -21,10 +21,18 @@ export function CommandCenterSidebar() {
     setLoading(true)
     
     try {
-      const { error } = await signIn(email, password)
-      if (error) throw error
+      console.log('Frontend: Attempting login with email:', email)
+      const result = await signIn(email, password)
+      
+      if (result.error) {
+        console.error('Frontend: Login failed:', result.error)
+        throw result.error
+      }
+      
+      console.log('Frontend: Login successful')
       toast.success('Welcome to the Command Center!')
     } catch (error: any) {
+      console.error('Frontend: Sign in error:', error)
       toast.error(error.message || 'Access denied')
     } finally {
       setLoading(false)

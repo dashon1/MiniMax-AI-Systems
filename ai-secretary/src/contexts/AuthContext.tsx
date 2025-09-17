@@ -39,9 +39,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Auth methods
+  // Auth methods with better error handling
   async function signIn(email: string, password: string) {
-    return await supabase.auth.signInWithPassword({ email, password })
+    try {
+      console.log('Attempting login for:', email)
+      const result = await supabase.auth.signInWithPassword({ email, password })
+      
+      if (result.error) {
+        console.error('Login error:', result.error)
+        throw result.error
+      }
+      
+      console.log('Login successful for:', email)
+      return result
+    } catch (error) {
+      console.error('Sign in error:', error)
+      throw error
+    }
   }
 
   async function signUp(email: string, password: string) {
