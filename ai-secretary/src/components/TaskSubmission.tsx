@@ -2,6 +2,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext'
 import { useState } from 'react'
 import { useTasks, useTaskRouter, useAgents } from '@/hooks/useTasks'
 import { useGamification } from '@/hooks/useGamification'
+import toast from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -63,23 +64,44 @@ export function TaskSubmission() {
   }
 
   const handleSubmit = async () => {
-    if (!taskContent.trim() || !canAffordTask) return
+    if (!taskContent.trim() || !canAffordTask) {
+      if (!taskContent.trim()) {
+        toast.error('Please enter a task description')
+      } else if (!canAffordTask) {
+        toast.error(`Insufficient credits. You need ${estimatedCreditCost} credits but only have ${remainingCredits} remaining.`)
+      }
+      return
+    }
     
-    // Use credits before submitting task
-    const success = await useCredits(estimatedCreditCost)
-    if (!success) return
-    
-    createTask({
-      taskContent,
-      priority,
-      manualAgentOverride: manualAgent
-    })
-    
-    // Clear form
-    setTaskContent('')
-    setPriority('normal')
-    setManualAgent(undefined)
-    clearRouting()
+    try {
+      // Use credits before submitting task
+      console.log(`Attempting to use ${estimatedCreditCost} credits for task submission`)
+      const success = await useCredits(estimatedCreditCost)
+      
+      if (!success) {
+        toast.error('Failed to process credit usage. Please try again or contact support.')
+        return
+      }
+      
+      console.log('Credits used successfully, submitting task')
+      
+      // Submit task
+      createTask({
+        taskContent,
+        priority,
+        manualAgentOverride: manualAgent
+      })
+      
+      // Clear form
+      setTaskContent('')
+      setPriority('normal')
+      setManualAgent(undefined)
+      clearRouting()
+      
+    } catch (error) {
+      console.error('Task submission error:', error)
+      toast.error('Failed to submit task. Please try again.')
+    }
   }
 
   const selectedAgentData = routing ? agents.find(a => a.agent_name === routing.selectedAgent) : null
@@ -303,7 +325,7 @@ export function TaskSubmission() {
                 </div>
               ) : !canAffordTask ? (
                 <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
+                  <CreditCard className="h-3 w-3" />
                   <span>Insufficient Credits ({estimatedCreditCost} needed)</span>
                 </div>
               ) : (

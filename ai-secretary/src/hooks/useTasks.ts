@@ -108,10 +108,30 @@ export function useTasks() {
       if (taskError) {
         console.error('Task submission failed:', {
           error: taskError,
+          errorMessage: taskError.message,
+          errorDetails: JSON.stringify(taskError, null, 2),
           user_id: user.id,
-          auth_state: !!user
+          auth_state: !!user,
+          taskRecord: {
+            ...taskRecord,
+            task_content: taskRecord.task_content.substring(0, 50) + '...'
+          }
         })
-        throw new Error(`Failed to submit task: ${taskError.message}`)
+        
+        // Provide user-friendly error messages based on error type
+        let userMessage = 'Failed to submit task. Please try again.'
+        
+        if (taskError.message?.includes('Task data is required')) {
+          userMessage = 'Invalid task data. Please refresh the page and try again.'
+        } else if (taskError.message?.includes('Failed to insert task')) {
+          userMessage = 'Database error. Please try again in a moment.'
+        } else if (taskError.message?.includes('Authentication')) {
+          userMessage = 'Please sign in again to submit tasks.'
+        } else if (taskError.message?.includes('network') || taskError.message?.includes('fetch')) {
+          userMessage = 'Network error. Please check your connection and try again.'
+        }
+        
+        throw new Error(userMessage)
       }
 
       if (!submitResult?.data) {

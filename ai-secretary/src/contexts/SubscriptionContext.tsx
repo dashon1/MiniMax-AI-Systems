@@ -60,27 +60,28 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       if (data) {
         setSubscription(data as Subscription)
       } else {
-        // Create default standard subscription for new users
-        const defaultSubscription = {
-          user_id: user.id,
-          status: 'active',
-          plan_type: 'standard',
-          current_credits: 100,
-          credit_limit: 100,
-          credits_used_this_month: 0,
-          billing_cycle_start: new Date().toISOString()
-        }
-
-        const { data: newSub, error: createError } = await supabase
-          .from('neural_subscriptions')
-          .insert(defaultSubscription)
-          .select()
-          .single()
-
-        if (createError) {
-          console.error('Failed to create default subscription:', createError)
-        } else {
-          setSubscription(newSub as Subscription)
+        // Create default standard subscription for new users via edge function
+        console.log('No subscription found, creating default subscription for user:', user.id)
+        
+        try {
+          const { data: provisionResult, error: provisionError } = await supabase.functions.invoke('provision-user-subscription', {
+            body: { user_id: user.id }
+          })
+          
+          if (provisionError) {
+            console.error('Failed to provision subscription via edge function:', provisionError)
+            toast.error('Failed to set up your account. Please refresh the page.')
+          } else if (provisionResult?.success && provisionResult?.data?.subscription) {
+            console.log('Default subscription created successfully:', provisionResult.data.subscription.id)
+            setSubscription(provisionResult.data.subscription as Subscription)
+            toast.success('Welcome! Your account has been set up with 100 free credits.')
+          } else {
+            console.error('Unexpected response from subscription provisioning:', provisionResult)
+            toast.error('Failed to set up your account. Please contact support.')
+          }
+        } catch (error) {
+          console.error('Error during subscription provisioning:', error)
+          toast.error('Failed to set up your account. Please refresh the page.')
         }
       }
     } catch (error) {
