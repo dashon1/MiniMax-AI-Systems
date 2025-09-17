@@ -63,10 +63,11 @@ interface SpeechRecognitionAlternative {
 
 interface VoiceCommandCenterProps {
   className?: string
-  onTaskSubmit?: (content: string, transcription?: string) => void
+  onTaskSubmit?: (content: string, transcription?: string) => Promise<void> | void
+  isSubmitting?: boolean
 }
 
-export function VoiceCommandCenter({ className, onTaskSubmit }: VoiceCommandCenterProps) {
+export function VoiceCommandCenter({ className, onTaskSubmit, isSubmitting = false }: VoiceCommandCenterProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [transcription, setTranscription] = useState('')
   const [interimTranscript, setInterimTranscript] = useState('')
@@ -193,15 +194,19 @@ export function VoiceCommandCenter({ className, onTaskSubmit }: VoiceCommandCent
     }
   }
   
-  const submitVoiceTask = () => {
+  const submitVoiceTask = async () => {
     const finalText = transcription.trim()
     if (finalText && onTaskSubmit) {
-      onTaskSubmit(finalText, finalText)
-      toast.success('Voice command deployed to Neural Collective!')
-      // Reset state
-      setTranscription('')
-      setInterimTranscript('')
-      setConfidence(0)
+      try {
+        await onTaskSubmit(finalText, finalText)
+        // Reset state after successful submission
+        setTranscription('')
+        setInterimTranscript('')
+        setConfidence(0)
+      } catch (error) {
+        console.error('Voice task submission failed:', error)
+        toast.error('Failed to process voice command')
+      }
     } else {
       toast.error('No voice input detected. Please try speaking again.')
     }
@@ -408,15 +413,29 @@ export function VoiceCommandCenter({ className, onTaskSubmit }: VoiceCommandCent
               <div className="flex gap-3">
                 <Button
                   onClick={submitVoiceTask}
-                  disabled={!transcription.trim()}
+                  disabled={!transcription.trim() || isSubmitting}
                   className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Send className="h-4 w-4 mr-2" />
-                  Deploy to Neural Collective
+                  {isSubmitting ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"
+                      />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Deploy to Neural Collective
+                    </>
+                  )}
                 </Button>
                 <Button
                   onClick={clearRecording}
                   variant="outline"
+                  disabled={isSubmitting}
                   className="border-red-500/20 hover:bg-red-500/10 text-red-400"
                 >
                   Clear

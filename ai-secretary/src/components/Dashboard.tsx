@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAdminAuth } from '@/hooks/useAdminAuth'
+import { useVoiceTaskCreation } from '@/hooks/useVoiceTaskCreation'
+import { useVoiceTaskMonitoring } from '@/hooks/useVoiceTaskMonitoring'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -9,6 +12,7 @@ import { AgentOverview } from '@/components/AgentOverview'
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
 import { GamificationDashboard } from '@/components/GamificationDashboard'
 import { VoiceCommandCenter } from '@/components/VoiceCommandCenter'
+import { VoiceResponseCenter } from '@/components/VoiceResponseCenter'
 import { SuperAgentCollectives } from '@/components/SuperAgentCollectives'
 import { FloatingChatBot } from '@/components/FloatingChatBot'
 import { AIWelcomeBanner } from '@/components/welcome/AIWelcomeBanner'
@@ -25,6 +29,10 @@ export function Dashboard() {
   const { user, signOut } = useAuth()
   const { isAdmin } = useAdminAuth(user?.id)
   const { subscription, getRemainingCredits, getCreditUsagePercentage, isProTier } = useSubscription()
+  const { createVoiceTask, isCreating } = useVoiceTaskCreation()
+  
+  // Real voice response monitoring system
+  const { voiceResponses, addTaskToMonitor, clearVoiceResponses, isMonitoring } = useVoiceTaskMonitoring()
 
   const handleSignOut = async () => {
     try {
@@ -35,10 +43,33 @@ export function Dashboard() {
     }
   }
   
-  const handleVoiceTaskSubmit = (content: string, transcription?: string) => {
-    // This would integrate with the existing task submission system
-    console.log('Voice task submitted:', { content, transcription })
-    toast.success('Voice command processed by Super Agent Group!')
+  const handleVoiceTaskSubmit = async (content: string, transcription?: string) => {
+    if (!content.trim()) {
+      toast.error('No voice command detected')
+      return
+    }
+    
+    try {
+      // Submit the voice task and get the task ID immediately
+      const result = await createVoiceTask({
+        taskContent: content,
+        priority: 'normal'
+      })
+      
+      // Start monitoring the task for completion
+      if (result.task) {
+        addTaskToMonitor(result.task.id)
+        toast.success('Voice command deployed to Neural Collective!')
+      }
+      
+    } catch (error: any) {
+      console.error('Voice task submission failed:', error)
+      toast.error(error.message || 'Failed to process voice command')
+    }
+  }
+  
+  const handleClearVoiceResponses = () => {
+    clearVoiceResponses()
   }
 
   return (
@@ -284,9 +315,21 @@ export function Dashboard() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                className="space-y-6"
               >
-                <VoiceCommandCenter onTaskSubmit={handleVoiceTaskSubmit} />
+                {/* Voice Input and Output Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <VoiceCommandCenter 
+                    onTaskSubmit={handleVoiceTaskSubmit}
+                    isSubmitting={isCreating}
+                  />
+                  <VoiceResponseCenter 
+                    responses={voiceResponses}
+                    onClear={handleClearVoiceResponses}
+                  />
+                </div>
+                
+                {/* Task History Row */}
                 <div className="lg:max-h-[600px] lg:overflow-hidden">
                   <TaskHistory />
                 </div>

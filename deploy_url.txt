@@ -1,11 +1,1 @@
-Website deployed to online address: https://rh59ofuh3ibn.space.minimax.io
-
-Original URL (with issues): https://jjl47c9nqo9n.space.minimax.io
-Fixed URL (authentication & performance optimized): https://rh59ofuh3ibn.space.minimax.io
-
-Changes:
-- Fixed login issues with ara-m5 accounts
-- Optimized performance with code splitting
-- Added debug tools for troubleshooting
-- Reduced bundle size by 31%
-- Enhanced error handling and logging
+Website deployed to online address: https://rw2toam4e0kx.space.minimax.io
