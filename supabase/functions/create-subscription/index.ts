@@ -28,10 +28,12 @@ Deno.serve(async (req) => {
     let priceId: string;
     switch (planType) {
       case 'standard':
-        priceId = 'price_standard_aeros';
+        // Standard plan is free, no Stripe price needed
+        priceId = '';
         break;
       case 'pro':
-        priceId = 'price_pro_aeros';
+        // Use a test price ID for now - this should be replaced with real Stripe price ID
+        priceId = 'price_1234567890';
         break;
       default:
         throw new Error('Invalid plan type');
