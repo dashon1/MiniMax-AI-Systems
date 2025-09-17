@@ -189,13 +189,19 @@ export function SimpleVoiceInput({
     
     if (onSubmit) {
       try {
+        console.log('Submitting voice/text input:', {
+          text: finalText.substring(0, 100) + '...',
+          length: finalText.length
+        })
+        
         await onSubmit(finalText)
         setText('')
         setCurrentTranscript('')
-        toast.success('🚀 Message submitted!')
-      } catch (error) {
+        console.log('Voice/text submission successful')
+        toast.success('🚀 Task submitted successfully!')
+      } catch (error: any) {
         console.error('Submit error:', error)
-        toast.error('Failed to submit message')
+        toast.error(`Failed to submit: ${error.message || 'Unknown error'}`)
       }
     }
   }, [text, onSubmit])
@@ -252,7 +258,7 @@ export function SimpleVoiceInput({
           </div>
         </CardTitle>
         <CardDescription>
-          Type your message or use voice input for hands-free interaction
+          Type your message or use voice input for hands-free AI task creation
         </CardDescription>
       </CardHeader>
       

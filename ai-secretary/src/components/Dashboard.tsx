@@ -15,6 +15,8 @@ import { VoiceCommandCenter } from '@/components/VoiceCommandCenter'
 import { SimpleVoiceInput } from '@/components/SimpleVoiceInput'
 import { VoiceResponseCenter } from '@/components/VoiceResponseCenter'
 import { VoiceDebugger } from '@/components/VoiceDebugger'
+import { TaskPipelineDebugger } from '@/components/TaskPipelineDebugger'
+import { DatabaseSetupChecker } from '@/components/DatabaseSetupChecker'
 import { SuperAgentCollectives } from '@/components/SuperAgentCollectives'
 import { FloatingChatBot } from '@/components/FloatingChatBot'
 import { AIWelcomeBanner } from '@/components/welcome/AIWelcomeBanner'
@@ -399,7 +401,10 @@ export function Dashboard() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
+                className="space-y-6"
               >
+                <DatabaseSetupChecker />
+                <TaskPipelineDebugger />
                 <VoiceDebugger />
               </motion.div>
             </TabsContent>

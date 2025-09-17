@@ -13,9 +13,21 @@ export function useVoiceTaskCreation() {
       priority?: string
       manualAgentOverride?: string
     }) => {
-      if (!user) throw new Error('User not authenticated')
+      if (!user) {
+        console.error('Voice task creation failed: User not authenticated')
+        throw new Error('User not authenticated')
+      }
 
-      // First, get agent routing recommendation
+      console.log('Creating voice task:', {
+        user_id: user.id,
+        email: user.email,
+        taskContent: taskData.taskContent.substring(0, 100) + '...',
+        priority: taskData.priority,
+        manualAgentOverride: taskData.manualAgentOverride
+      })
+
+      // Step 1: Get agent routing recommendation
+      console.log('Voice Task - Step 1: Getting agent routing...')
       const { data: routingData, error: routingError } = await supabase.functions.invoke('task-router', {
         body: {
           taskContent: taskData.taskContent,
@@ -24,47 +36,100 @@ export function useVoiceTaskCreation() {
         }
       })
 
-      if (routingError) throw routingError
+      if (routingError) {
+        console.error('Voice task routing failed:', routingError)
+        throw new Error(`Voice task routing failed: ${routingError.message}`)
+      }
+
+      if (!routingData?.data) {
+        console.error('No routing data received for voice task')
+        throw new Error('No routing data received from task router')
+      }
 
       const selectedAgent = routingData.data.selectedAgent
       const reasoning = routingData.data.reasoning
 
-      // Create task record
-      const { data: taskRecord, error: taskError } = await supabase
+      console.log('Voice task agent routing successful:', {
+        selectedAgent,
+        reasoning: reasoning?.substring(0, 100) + '...'
+      })
+
+      // Step 2: Create task record in database
+      console.log('Voice Task - Step 2: Creating task record in database...')
+      const taskRecord = {
+        user_id: user.id,
+        task_content: taskData.taskContent,
+        selected_agent: selectedAgent,
+        agent_reasoning: reasoning,
+        status: 'pending' as const,
+        priority: taskData.priority || 'normal',
+        estimated_cost: 0
+      }
+
+      console.log('Voice task - inserting task record:', {
+        ...taskRecord,
+        task_content: taskRecord.task_content.substring(0, 50) + '...',
+        agent_reasoning: taskRecord.agent_reasoning?.substring(0, 50) + '...'
+      })
+
+      const { data: insertedTask, error: taskError } = await supabase
         .from('tasks')
-        .insert({
-          user_id: user.id,
-          task_content: taskData.taskContent,
-          selected_agent: selectedAgent,
-          agent_reasoning: reasoning,
-          status: 'pending',
-          priority: taskData.priority || 'normal',
-          estimated_cost: 0
-        })
+        .insert(taskRecord)
         .select()
         .single()
 
-      if (taskError) throw taskError
+      if (taskError) {
+        console.error('Voice task insertion failed:', {
+          error: taskError,
+          user_id: user.id,
+          auth_state: !!user,
+          session: await supabase.auth.getSession()
+        })
+        throw new Error(`Failed to create voice task: ${taskError.message}`)
+      }
 
-      // Trigger task processing (async)
-      supabase.functions.invoke('task-processor', {
+      if (!insertedTask) {
+        console.error('No voice task returned after insertion')
+        throw new Error('Voice task was not created successfully')
+      }
+
+      console.log('Voice task created successfully:', {
+        task_id: insertedTask.id,
+        status: insertedTask.status,
+        selected_agent: insertedTask.selected_agent
+      })
+
+      // Step 3: Trigger task processing (async)
+      console.log('Voice Task - Step 3: Triggering task processing...')
+      const processingResult = supabase.functions.invoke('task-processor', {
         body: {
-          taskId: taskRecord.id,
+          taskId: insertedTask.id,
           taskContent: taskData.taskContent,
           selectedAgent,
           priority: taskData.priority || 'normal'
         }
       })
 
-      return { task: taskRecord, routing: routingData.data }
+      // Don't await the processing - it's async
+      processingResult.then((result) => {
+        if (result.error) {
+          console.error('Voice task processing invocation failed:', result.error)
+        } else {
+          console.log('Voice task processing triggered successfully')
+        }
+      })
+
+      return { task: insertedTask, routing: routingData.data }
     },
     onSuccess: (data) => {
+      console.log('Voice task creation mutation successful:', data.task.id)
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      toast.success('Voice task submitted successfully!')
+      toast.success(`🎤 Voice task submitted successfully! (ID: ${data.task.id.slice(-8)})`)
       return data.task // Return the task for monitoring
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to submit voice task')
+      console.error('Voice task creation mutation failed:', error)
+      toast.error(`Voice task failed: ${error.message || 'Unknown error'}`)
     }
   })
 
