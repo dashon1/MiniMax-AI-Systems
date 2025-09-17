@@ -20,6 +20,12 @@ interface SpeechRecognition extends EventTarget {
   onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null
   onerror: ((this: SpeechRecognition, ev: SpeechRecognitionError) => any) | null
   onend: ((this: SpeechRecognition, ev: Event) => any) | null
+  // Optional properties that may not be available on all browsers
+  maxAlternatives?: number
+  onspeechstart?: ((this: SpeechRecognition, ev: Event) => any) | null
+  onspeechend?: ((this: SpeechRecognition, ev: Event) => any) | null
+  onsoundstart?: ((this: SpeechRecognition, ev: Event) => any) | null
+  onsoundend?: ((this: SpeechRecognition, ev: Event) => any) | null
 }
 
 declare global {
@@ -78,119 +84,312 @@ export function VoiceCommandCenter({ className, onTaskSubmit, isSubmitting = fal
   const recognitionRef = useRef<SpeechRecognition | null>(null)
   
   useEffect(() => {
-    // Check for speech recognition support
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    setSupportsSpeechRecognition(!!SpeechRecognition)
-    
-    // Check microphone permissions
-    if (navigator.permissions) {
-      navigator.permissions.query({ name: 'microphone' as PermissionName }).then(result => {
-        setPermissionStatus(result.state as 'granted' | 'denied' | 'prompt')
-        result.onchange = () => {
-          setPermissionStatus(result.state as 'granted' | 'denied' | 'prompt')
+    // Enhanced speech recognition support detection
+    const checkSpeechRecognition = () => {
+      try {
+        // Check multiple ways to detect speech recognition support
+        const hasWebSpeechAPI = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window
+        const hasGetUserMedia = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+        
+        // Additional browser-specific checks
+        const isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
+        const isEdge = /Edg/.test(navigator.userAgent)
+        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
+        const isFirefox = /Firefox/.test(navigator.userAgent)
+        
+        // Firefox doesn't support Web Speech API
+        if (isFirefox) {
+          console.warn('Firefox does not support Web Speech API')
+          return false
         }
-      })
+        
+        // Check if we can create a SpeechRecognition instance
+        let canCreateRecognition = false
+        try {
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+          if (SpeechRecognition) {
+            const testRecognition = new SpeechRecognition()
+            canCreateRecognition = !!testRecognition
+            // Clean up test instance
+            if (testRecognition && testRecognition.abort) {
+              testRecognition.abort()
+            }
+          }
+        } catch (error) {
+          console.warn('Cannot create SpeechRecognition instance:', error)
+          canCreateRecognition = false
+        }
+        
+        return hasWebSpeechAPI && hasGetUserMedia && canCreateRecognition && (isChrome || isEdge || isSafari)
+      } catch (error) {
+        console.error('Error checking speech recognition support:', error)
+        return false
+      }
+    }
+    
+    const isSupported = checkSpeechRecognition()
+    setSupportsSpeechRecognition(isSupported)
+    
+    // Enhanced microphone permission checking
+    const checkMicrophonePermissions = async () => {
+      try {
+        if (navigator.permissions && navigator.permissions.query) {
+          const result = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+          setPermissionStatus(result.state as 'granted' | 'denied' | 'prompt')
+          
+          result.onchange = () => {
+            setPermissionStatus(result.state as 'granted' | 'denied' | 'prompt')
+          }
+        } else {
+          // Fallback: try to access microphone to check permissions
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            setPermissionStatus('granted')
+            // Stop the stream immediately as this is just a permission check
+            stream.getTracks().forEach(track => track.stop())
+          } catch (error: any) {
+            if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+              setPermissionStatus('denied')
+            } else {
+              setPermissionStatus('prompt')
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Unable to check microphone permissions:', error)
+        setPermissionStatus('prompt')
+      }
+    }
+    
+    if (isSupported) {
+      checkMicrophonePermissions()
     }
     
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.abort()
+        try {
+          recognitionRef.current.abort()
+        } catch (error) {
+          console.warn('Error aborting speech recognition:', error)
+        }
       }
     }
   }, [])
   
   const startVoiceRecognition = async () => {
     if (!supportsSpeechRecognition) {
-      toast.error('Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.')
+      const isFirefox = /Firefox/.test(navigator.userAgent)
+      if (isFirefox) {
+        toast.error('Firefox does not support voice recognition. Please use Chrome, Edge, or Safari.')
+      } else {
+        toast.error('Speech recognition not supported in this browser. Please use Chrome, Edge, or Safari.')
+      }
       return
     }
 
     try {
-      // Request microphone permission first
-      await navigator.mediaDevices.getUserMedia({ audio: true })
+      // Enhanced microphone permission and access check
+      let stream: MediaStream | null = null
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        })
+        setPermissionStatus('granted')
+        // Stop the stream after permission check
+        stream.getTracks().forEach(track => track.stop())
+      } catch (permissionError: any) {
+        let errorMessage = 'Microphone access failed: '
+        
+        switch (permissionError.name) {
+          case 'NotAllowedError':
+          case 'PermissionDeniedError':
+            errorMessage += 'Permission denied. Please allow microphone access and try again.'
+            setPermissionStatus('denied')
+            break
+          case 'NotFoundError':
+            errorMessage += 'No microphone found. Please check your microphone connection.'
+            break
+          case 'NotReadableError':
+            errorMessage += 'Microphone is being used by another application.'
+            break
+          default:
+            errorMessage += permissionError.message || 'Unknown error accessing microphone.'
+        }
+        
+        toast.error(errorMessage)
+        return
+      }
       
+      // Create speech recognition instance with enhanced error handling
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-      const recognition = new SpeechRecognition()
+      
+      if (!SpeechRecognition) {
+        toast.error('Speech recognition not available. Please use a supported browser.')
+        setSupportsSpeechRecognition(false)
+        return
+      }
+      
+      let recognition: SpeechRecognition
+      try {
+        recognition = new SpeechRecognition()
+      } catch (constructorError) {
+        console.error('Failed to create SpeechRecognition instance:', constructorError)
+        toast.error('Failed to initialize speech recognition. Please refresh the page and try again.')
+        return
+      }
+      
       recognitionRef.current = recognition
       
+      // Configure recognition with optimal settings
       recognition.continuous = true
       recognition.interimResults = true
       recognition.lang = 'en-US'
       
+      // Set maxAlternatives if supported
+      if ('maxAlternatives' in recognition) {
+        ;(recognition as any).maxAlternatives = 1
+      }
+      
+      // Enhanced event handlers
       recognition.onstart = () => {
         setIsRecording(true)
         setTranscription('')
         setInterimTranscript('')
-        toast.success('Voice recognition started - Speak now!')
+        setConfidence(0)
+        toast.success('Voice recognition started - Speak clearly!')
       }
       
       recognition.onresult = (event) => {
         let interimTranscript = ''
         let finalTranscript = ''
         
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript
-          const confidence = event.results[i][0].confidence || 0
-          
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript + ' '
-            setConfidence(confidence)
-          } else {
-            interimTranscript += transcript
+        try {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i]
+            const transcript = result[0].transcript
+            const confidence = result[0].confidence || 0
+            
+            if (result.isFinal) {
+              finalTranscript += transcript + ' '
+              setConfidence(confidence)
+            } else {
+              interimTranscript += transcript
+            }
           }
+          
+          if (finalTranscript) {
+            setTranscription(prev => prev + finalTranscript)
+          }
+          setInterimTranscript(interimTranscript)
+        } catch (resultError) {
+          console.error('Error processing speech results:', resultError)
         }
-        
-        if (finalTranscript) {
-          setTranscription(prev => prev + finalTranscript)
-        }
-        setInterimTranscript(interimTranscript)
       }
       
       recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error)
+        console.error('Speech recognition error:', event.error, event)
         let errorMessage = 'Speech recognition error: '
+        let shouldStopRecording = true
         
         switch (event.error) {
           case 'not-allowed':
-            errorMessage += 'Microphone access denied. Please enable microphone permissions.'
+            errorMessage += 'Microphone access denied. Please enable microphone permissions in your browser settings.'
             setPermissionStatus('denied')
             break
           case 'no-speech':
-            errorMessage += 'No speech detected. Please try speaking again.'
-            break
-          case 'network':
-            errorMessage += 'Network error. Please check your internet connection.'
+            errorMessage += 'No speech detected. Please speak clearly and try again.'
+            shouldStopRecording = false // Don't stop for no-speech, let user try again
             break
           case 'audio-capture':
-            errorMessage += 'Microphone not found or not working.'
+            errorMessage += 'Microphone not found or not working. Please check your microphone.'
+            break
+          case 'network':
+            errorMessage += 'Network error occurred. Please check your internet connection.'
+            break
+          case 'service-not-allowed':
+            errorMessage += 'Speech recognition service not allowed. Please use HTTPS.'
+            break
+          case 'bad-grammar':
+            errorMessage += 'Speech recognition configuration error.'
+            break
+          case 'language-not-supported':
+            errorMessage += 'Language not supported. Switching to default language.'
             break
           default:
-            errorMessage += event.error
+            errorMessage += `${event.error}. Please try again.`
         }
         
         toast.error(errorMessage)
-        setIsRecording(false)
+        
+        if (shouldStopRecording) {
+          setIsRecording(false)
+        }
       }
       
       recognition.onend = () => {
         setIsRecording(false)
-        if (transcription || interimTranscript) {
+        if (transcription.trim() || interimTranscript.trim()) {
           toast.success('Voice recognition completed!')
+        } else {
+          toast('Voice recognition ended. Click start to try again.', { icon: 'ℹ️' })
         }
       }
       
-      recognition.start()
+      // Set optional event handlers if supported
+      if ('onspeechstart' in recognition) {
+        ;(recognition as any).onspeechstart = () => {
+          console.log('Speech detected')
+        }
+      }
+      
+      if ('onspeechend' in recognition) {
+        ;(recognition as any).onspeechend = () => {
+          console.log('Speech ended')
+        }
+      }
+      
+      if ('onsoundstart' in recognition) {
+        ;(recognition as any).onsoundstart = () => {
+          console.log('Sound detected')
+        }
+      }
+      
+      if ('onsoundend' in recognition) {
+        ;(recognition as any).onsoundend = () => {
+          console.log('Sound ended')
+        }
+      }
+      
+      // Start recognition with timeout safety
+      try {
+        recognition.start()
+      } catch (startError) {
+        console.error('Failed to start recognition:', startError)
+        toast.error('Failed to start voice recognition. Please try again.')
+        setIsRecording(false)
+      }
       
     } catch (error) {
-      console.error('Error starting voice recognition:', error)
-      toast.error('Failed to access microphone. Please check permissions and try again.')
+      console.error('Unexpected error in voice recognition:', error)
+      toast.error('An unexpected error occurred. Please refresh the page and try again.')
       setIsRecording(false)
     }
   }
   
   const stopVoiceRecognition = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop()
+    try {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+        setIsRecording(false)
+        toast.success('Voice recognition stopped')
+      }
+    } catch (error) {
+      console.error('Error stopping voice recognition:', error)
+      setIsRecording(false)
     }
   }
   
@@ -262,7 +461,7 @@ export function VoiceCommandCenter({ className, onTaskSubmit, isSubmitting = fal
       </CardHeader>
       
       <CardContent className="space-y-6 relative">
-        {/* Browser Compatibility Check */}
+        {/* Enhanced Browser Compatibility Check */}
         {!supportsSpeechRecognition && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -271,11 +470,23 @@ export function VoiceCommandCenter({ className, onTaskSubmit, isSubmitting = fal
           >
             <div className="flex items-center gap-3">
               <AlertCircle className="h-5 w-5 text-red-400" />
-              <div>
-                <p className="text-sm font-medium text-red-400">Speech Recognition Not Supported</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Please use Chrome, Edge, or Safari for voice functionality.
-                </p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-400">Voice Recognition Not Available</p>
+                <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                  {/Firefox/.test(navigator.userAgent) ? (
+                    <p>Firefox does not support the Web Speech API. Please switch to Chrome, Edge, or Safari.</p>
+                  ) : (
+                    <>
+                      <p>Your browser may not support voice recognition or it requires specific conditions:</p>
+                      <ul className="list-disc list-inside ml-2 space-y-0.5">
+                        <li>Use Chrome, Edge, or Safari browsers</li>
+                        <li>Ensure you're using HTTPS (required for microphone access)</li>
+                        <li>Check that microphone permissions are enabled</li>
+                        <li>Try refreshing the page</li>
+                      </ul>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
