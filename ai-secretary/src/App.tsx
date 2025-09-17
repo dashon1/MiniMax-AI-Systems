@@ -3,7 +3,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AuthPage } from '@/components/AuthPage'
+import { RedesignedAuthPage } from '@/components/RedesignedAuthPage'
 import { Dashboard } from '@/components/Dashboard'
 import { Toaster } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
@@ -24,16 +24,16 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
-          <p className="text-foreground">Loading AI Secretary...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-blue-400 mx-auto mb-4" />
+          <p className="text-white">Loading AEROS Platform...</p>
         </div>
       </div>
     )
   }
 
-  return user ? <Dashboard /> : <AuthPage />
+  return user ? <Dashboard /> : <RedesignedAuthPage />
 }
 
 function App() {
