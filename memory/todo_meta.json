@@ -5,21 +5,21 @@
         "id": "1",
         "content": "Build comprehensive Admin Panel with user and credit management",
         "details": "Create admin dashboard with:\n- User account management (create, edit, delete client accounts)\n- Credit allocation system (assign credits to clients)\n- System analytics and monitoring\n- Database management tools\n- Admin authentication and role-based access",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "2": {
         "id": "2",
         "content": "Develop Agent Management Interface",
         "details": "Build agent management system similar to the image:\n- Agent cards display with performance metrics\n- Add/edit/deploy agents functionality\n- Agent capability configuration\n- Performance monitoring and analytics\n- Agent status management (active/inactive)\n- Integration with available tools and APIs",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "3": {
         "id": "3",
         "content": "Create User Dashboard Panel",
         "details": "Develop client-facing user panel:\n- User registration and authentication\n- Credit balance display and usage tracking\n- Task history and results\n- Agent selection and interaction interface\n- Subscription management\n- User profile management",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "4": {
