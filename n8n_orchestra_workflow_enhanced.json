@@ -1,0 +1,933 @@
+{
+  "name": "AEROS Orchestra Multi-Agent System - Enhanced",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "orchestra-webhook",
+        "responseMode": "responseNode",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Voice Input Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "orchestra-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Voice input preprocessing\nconst inputData = $input.item.json;\n\n// Extract and validate voice transcript\nconst transcript = inputData.transcript || inputData.text || '';\nconst audioUrl = inputData.audioUrl || '';\nconst userId = inputData.userId || 'anonymous';\nconst sessionId = inputData.sessionId || `session_${Date.now()}`;\n\nif (!transcript && !audioUrl) {\n  throw new Error('No transcript or audio URL provided');\n}\n\n// Initialize session tracking\nconst sessionData = {\n  sessionId,\n  userId,\n  transcript,\n  audioUrl,\n  timestamp: new Date().toISOString(),\n  status: 'processing'\n};\n\nreturn sessionData;"
+      },
+      "id": "a0b1c2d3-e4f5-6789-abcd-ef0123456789",
+      "name": "Preprocess Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the AEROS Orchestrator Agent, the central brain of a sophisticated multi-agent system. Your role is to analyze user requests and create optimal execution plans.\n\nAVAILABLE AGENTS:\n\n1. **MANUS Agent** (Enterprise Automation Specialist)\n   - Workflow optimization and automation\n   - Business process re-engineering\n   - Enterprise resource planning\n   - Operational efficiency analysis\n   - Compliance monitoring and reporting\n   - Supply chain optimization\n\n2. **GENSPARK Agent** (Creative Innovation Engine)\n   - Creative content generation (text, visuals, multimedia)\n   - Innovation strategy development\n   - Design thinking facilitation\n   - Brand development and marketing automation\n   - Creative campaign orchestration\n   - Trend analysis and prediction\n\n3. **ABACUS Agent** (Advanced Data Analytics)\n   - Advanced statistical modeling\n   - Predictive analytics and forecasting\n   - Big data processing and analysis\n   - Machine learning model development\n   - Data visualization and reporting\n   - Business intelligence dashboards\n\n4. **MINIMAX Agent** (AI Optimization Specialist)\n   - AI model training and fine-tuning\n   - Algorithm performance optimization\n   - Neural network architecture design\n   - Hyperparameter optimization\n   - Model deployment and monitoring\n   - AI system performance analysis\n\n5. **MVP Agent** (Startup Strategy Specialist)\n   - MVP development strategy\n   - Market research and validation\n   - Product-market fit analysis\n   - Competitive landscape assessment\n   - Go-to-market strategy\n   - Investor pitch preparation\n\nRISK ASSESSMENT CRITERIA:\n- HIGH: Financial transactions, external communications, file system modifications, complex multi-agent plans\n- MEDIUM: Data analysis with personal info, content creation for public use, automation tasks\n- LOW: Research, simple content generation, basic analysis\n\nRETURN FORMAT (JSON only):\n{\n  \"user_intent\": \"Brief description of what user wants\",\n  \"complexity_score\": 1-10,\n  \"risk_level\": \"low/medium/high\",\n  \"requires_approval\": true/false,\n  \"estimated_duration\": \"time estimate\",\n  \"tasks\": [\n    {\n      \"id\": \"task_1\",\n      \"agent\": \"AGENT_NAME\",\n      \"description\": \"What this agent should do\",\n      \"priority\": \"high/medium/low\",\n      \"depends_on\": [],\n      \"timeout_seconds\": 300,\n      \"retry_count\": 3\n    }\n  ],\n  \"coordination_notes\": \"How agents should collaborate\"\n}"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.transcript }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 2000,
+          "timeout": 30000
+        }
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f23456789012",
+      "name": "Orchestrator Brain",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate orchestrator response\nconst aiResponse = $input.item.json;\nlet planData;\n\ntry {\n  // Extract JSON from AI response\n  const responseText = aiResponse.choices?.[0]?.message?.content || aiResponse.text || JSON.stringify(aiResponse);\n  \n  // Try to parse JSON\n  if (responseText.includes('{')) {\n    const jsonStart = responseText.indexOf('{');\n    const jsonEnd = responseText.lastIndexOf('}') + 1;\n    const jsonString = responseText.substring(jsonStart, jsonEnd);\n    planData = JSON.parse(jsonString);\n  } else {\n    throw new Error('No JSON found in response');\n  }\n  \n  // Validate required fields\n  if (!planData.user_intent || !planData.tasks || !Array.isArray(planData.tasks)) {\n    throw new Error('Invalid plan structure');\n  }\n  \n  // Add metadata\n  planData.session_id = $('Preprocess Input').item.json.sessionId;\n  planData.created_at = new Date().toISOString();\n  planData.status = 'validated';\n  \n  return planData;\n  \n} catch (error) {\n  // Fallback plan for parsing errors\n  return {\n    user_intent: 'System error - using fallback plan',\n    complexity_score: 1,\n    risk_level: 'low',\n    requires_approval: false,\n    estimated_duration: '30 seconds',\n    tasks: [{\n      id: 'fallback_task',\n      agent: 'GENSPARK',\n      description: 'Generate a helpful response for the user query',\n      priority: 'high',\n      depends_on: [],\n      timeout_seconds: 30,\n      retry_count: 1\n    }],\n    coordination_notes: 'Fallback mode due to parsing error',\n    session_id: $('Preprocess Input').item.json.sessionId,\n    created_at: new Date().toISOString(),\n    status: 'fallback',\n    error: error.message\n  };\n}"
+      },
+      "id": "b1c2d3e4-f5a6-7890-bcde-f12345678901",
+      "name": "Parse Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.requires_approval }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-345678901234",
+      "name": "Check Approval Required",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "message": "=🚨 **AEROS APPROVAL REQUIRED** 🚨\n\n**Task:** {{ $json.user_intent }}\n\n**Risk Level:** {{ $json.risk_level.toUpperCase() }}\n**Complexity:** {{ $json.complexity_score }}/10\n**Estimated Duration:** {{ $json.estimated_duration }}\n\n**Planned Actions:**\n{{ $json.tasks.map(t => `• ${t.agent}: ${t.description}`).join('\\n') }}\n\n**Coordination Notes:** {{ $json.coordination_notes }}\n\n⚠️ Do you approve this execution plan?",
+        "buttons": [
+          {
+            "label": "✅ Approve",
+            "value": "approve"
+          },
+          {
+            "label": "❌ Deny",
+            "value": "deny"
+          },
+          {
+            "label": "📝 Modify",
+            "value": "modify"
+          }
+        ],
+        "buttonTimeout": 300
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-456789012345",
+      "name": "Human Approval Gate",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.response }}",
+              "operation": "equals",
+              "value2": "approve"
+            }
+          ]
+        }
+      },
+      "id": "d5e6f7a8-b9c0-1234-efab-567890123456",
+      "name": "Check Approval Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Initialize execution session\nconst plan = $('Parse Plan').item.json;\nconst sessionId = plan.session_id;\n\n// Create shared context for agent collaboration\nconst sharedContext = {\n  session_id: sessionId,\n  user_intent: plan.user_intent,\n  current_task: 0,\n  total_tasks: plan.tasks.length,\n  completed_tasks: [],\n  failed_tasks: [],\n  agent_results: {},\n  shared_data: {},\n  status: 'executing',\n  started_at: new Date().toISOString()\n};\n\n// Store in workflow static data for persistence\n$setWorkflowStaticData('sharedContext', sharedContext);\n\n// Prepare task queue\nconst taskQueue = plan.tasks.map((task, index) => ({\n  ...task,\n  index,\n  status: 'pending',\n  attempt: 0,\n  max_retries: task.retry_count || 3\n}));\n\nreturn {\n  plan,\n  sharedContext,\n  taskQueue,\n  currentTaskIndex: 0\n};"
+      },
+      "id": "e5f6a7b8-c9d0-1234-efab-567890123456",
+      "name": "Initialize Execution",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "f6a7b8c9-d0e1-2345-fabc-678901234567",
+      "name": "Task Iterator",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Dependency checker and task preparation\nconst currentTask = $input.item.json;\nconst sharedContext = $getWorkflowStaticData('sharedContext');\n\n// Check if dependencies are met\nif (currentTask.depends_on && currentTask.depends_on.length > 0) {\n  const unmetDependencies = currentTask.depends_on.filter(depId => \n    !sharedContext.completed_tasks.includes(depId)\n  );\n  \n  if (unmetDependencies.length > 0) {\n    return {\n      ...currentTask,\n      status: 'waiting_dependencies',\n      unmet_dependencies: unmetDependencies,\n      wait_time: 5000\n    };\n  }\n}\n\n// Prepare task context with shared data\nconst taskContext = {\n  ...currentTask,\n  shared_context: sharedContext.shared_data,\n  previous_results: sharedContext.agent_results,\n  session_metadata: {\n    session_id: sharedContext.session_id,\n    user_intent: sharedContext.user_intent,\n    task_number: sharedContext.current_task + 1,\n    total_tasks: sharedContext.total_tasks\n  },\n  status: 'ready',\n  prepared_at: new Date().toISOString()\n};\n\nreturn taskContext;"
+      },
+      "id": "f7a8b9c0-d1e2-3456-fabc-789012345678",
+      "name": "Check Dependencies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equals",
+              "value2": "waiting_dependencies"
+            }
+          ]
+        }
+      },
+      "id": "f8a9b0c1-d2e3-4567-abcd-890123456789",
+      "name": "Dependencies Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1850, 400]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.wait_time || 5000 }}",
+        "unit": "ms"
+      },
+      "id": "f9a0b1c2-d3e4-5678-bcde-901234567890",
+      "name": "Wait for Dependencies",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [2050, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "MANUS"
+                  }
+                ]
+              },
+              "outputKey": "manus"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "GENSPARK"
+                  }
+                ]
+              },
+              "outputKey": "genspark"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "ABACUS"
+                  }
+                ]
+              },
+              "outputKey": "abacus"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "MINIMAX"
+                  }
+                ]
+              },
+              "outputKey": "minimax"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "MVP"
+                  }
+                ]
+              },
+              "outputKey": "mvp"
+            }
+          ]\n        },
+        "fallbackOutput": "error"
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-789012345678",
+      "name": "Route to Agent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [2050, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.abacus.ai/v2/predict/executeAgentWithBinaryData",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.abacusApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"deploymentId\": \"{{ $json.deployment_id || 'default' }}\",\n  \"input\": {\n    \"task_description\": \"{{ $json.description }}\",\n    \"context\": {{ JSON.stringify($json.shared_context) }},\n    \"previous_results\": {{ JSON.stringify($json.previous_results) }},\n    \"session_metadata\": {{ JSON.stringify($json.session_metadata) }}\n  },\n  \"timeout\": {{ $json.timeout_seconds || 300 }}\n}",
+        "options": {
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}",
+          "retry": {
+            "enabled": true,
+            "maxTries": "={{ $json.max_retries || 3 }}"
+          }
+        }
+      },
+      "id": "b8c9d0e1-f2a3-4567-bcde-890123456789",
+      "name": "ABACUS Agent Execute",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// GENSPARK Agent with fallback to Manus automation\nconst task = $input.item.json;\n\n// Since GenSpark API may not be available, use Manus as automation fallback\nconst fallbackTask = {\n  agent: 'MANUS',\n  fallback_for: 'GENSPARK',\n  original_task: task,\n  automation_strategy: 'web_interface',\n  description: `Automate GenSpark AI task: ${task.description}`,\n  automation_steps: [\n    'Navigate to genspark.ai',\n    'Wait for page load (5 seconds)',\n    `Input query: \"${task.description}\"`,\n    'Click generate/search button',\n    'Wait for results (30-60 seconds)',\n    'Extract and format results',\n    'Return structured output'\n  ],\n  web_config: {\n    url: 'https://genspark.ai',\n    selectors: {\n      input: 'textarea, input[type=\"text\"]',\n      submit: 'button[type=\"submit\"], .generate-btn',\n      results: '.result, .output, .response'\n    },\n    timeouts: {\n      page_load: 5000,\n      generation: 60000,\n      extraction: 10000\n    }\n  },\n  shared_context: task.shared_context,\n  previous_results: task.previous_results,\n  session_metadata: task.session_metadata,\n  timeout_seconds: task.timeout_seconds || 300,\n  max_retries: task.max_retries || 3\n};\n\nreturn fallbackTask;"
+      },
+      "id": "c9d0e1f2-a3b4-5678-cdef-901234567890",
+      "name": "GENSPARK Fallback Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.minimaxi.com/v1/video_generation",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $credentials.minimaxApiKey }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"video-01\",\n  \"prompt\": \"{{ $json.description }}\",\n  \"context\": {{ JSON.stringify($json.shared_context) }},\n  \"previous_results\": {{ JSON.stringify($json.previous_results) }},\n  \"parameters\": {\n    \"resolution\": \"1080p\",\n    \"duration\": 15,\n    \"fps\": 30\n  }\n}",
+        "options": {
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}",
+          "retry": {
+            "enabled": true,
+            "maxTries": "={{ $json.max_retries || 3 }}"
+          }
+        }
+      },
+      "id": "d0e1f2a3-b4c5-6789-defa-012345678901",
+      "name": "MINIMAX Agent Execute",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2250, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/api/manus/execute",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Session-ID",
+              "value": "={{ $json.session_metadata.session_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"task\": {\n    \"description\": \"{{ $json.description }}\",\n    \"type\": \"{{ $json.automation_strategy || 'general' }}\",\n    \"automation_steps\": {{ JSON.stringify($json.automation_steps || []) }},\n    \"web_config\": {{ JSON.stringify($json.web_config || {}) }}\n  },\n  \"context\": {{ JSON.stringify($json.shared_context) }},\n  \"previous_results\": {{ JSON.stringify($json.previous_results) }},\n  \"session_metadata\": {{ JSON.stringify($json.session_metadata) }},\n  \"fallback_for\": \"{{ $json.fallback_for || null }}\"\n}",
+        "options": {
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}",
+          "retry": {
+            "enabled": true,
+            "maxTries": "={{ $json.max_retries || 3 }}"
+          }
+        }
+      },
+      "id": "e1f2a3b4-c5d6-7890-efab-123456789012",
+      "name": "MANUS Agent Execute",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2250, 600]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the MVP Agent, a startup strategy specialist. Analyze the task and provide strategic insights for MVP development, market validation, and business strategy.\n\nFocus on:\n- MVP development strategy\n- Market research and validation\n- Product-market fit analysis\n- Competitive landscape assessment\n- Go-to-market strategy\n- Investor pitch preparation\n\nReturn results in JSON format with actionable recommendations."
+            },
+            {
+              "role": "user",
+              "content": "=Task: {{ $json.description }}\n\nContext: {{ JSON.stringify($json.shared_context) }}\n\nPrevious Results: {{ JSON.stringify($json.previous_results) }}\n\nSession: {{ JSON.stringify($json.session_metadata) }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 2000,
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}"
+        }
+      },
+      "id": "e2f3a4b5-c6d7-8901-efab-234567890123",
+      "name": "MVP Agent Execute",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [2250, 700]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Agent result processor and context updater\nconst agentResult = $input.item.json;\nconst originalTask = $('Check Dependencies').item.json;\nconst sharedContext = $getWorkflowStaticData('sharedContext');\n\n// Process different agent response formats\nlet processedResult;\ntry {\n  if (agentResult.choices && agentResult.choices[0]) {\n    // OpenAI format (MVP Agent)\n    processedResult = {\n      agent: originalTask.agent,\n      task_id: originalTask.id,\n      status: 'completed',\n      output: agentResult.choices[0].message.content,\n      raw_response: agentResult,\n      completed_at: new Date().toISOString()\n    };\n  } else if (agentResult.result || agentResult.output) {\n    // Standard API format\n    processedResult = {\n      agent: originalTask.agent,\n      task_id: originalTask.id,\n      status: 'completed',\n      output: agentResult.result || agentResult.output,\n      raw_response: agentResult,\n      completed_at: new Date().toISOString()\n    };\n  } else {\n    // Direct result format\n    processedResult = {\n      agent: originalTask.agent,\n      task_id: originalTask.id,\n      status: 'completed',\n      output: agentResult,\n      completed_at: new Date().toISOString()\n    };\n  }\n} catch (error) {\n  processedResult = {\n    agent: originalTask.agent,\n    task_id: originalTask.id,\n    status: 'error',\n    error: error.message,\n    output: null,\n    completed_at: new Date().toISOString()\n  };\n}\n\n// Update shared context\nsharedContext.agent_results[originalTask.agent] = processedResult.output;\nsharedContext.completed_tasks.push(originalTask.id);\nsharedContext.current_task++;\n\n// Store updated context\n$setWorkflowStaticData('sharedContext', sharedContext);\n\nreturn {\n  ...processedResult,\n  shared_context_updated: true,\n  total_completed: sharedContext.completed_tasks.length,\n  remaining_tasks: sharedContext.total_tasks - sharedContext.completed_tasks.length\n};"
+      },
+      "id": "f2a3b4c5-d6e7-8901-fabc-234567890123",
+      "name": "Process Agent Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2450, 500]
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.min($json.agent === 'MINIMAX' ? 5 : 2, 10) }}",
+        "unit": "seconds"
+      },
+      "id": "a3b4c5d6-e7f8-9012-abcd-345678901234",
+      "name": "Inter-Agent Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [2650, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "notEqual",
+              "value2": "error"
+            }
+          ]
+        }
+      },
+      "id": "b4c5d6e7-f8a9-0123-bcde-456789012345",
+      "name": "Check Task Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2850, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Comprehensive error recovery system\nconst errorResult = $input.item.json;\nconst originalTask = $('Check Dependencies').item.json;\nconst sharedContext = $getWorkflowStaticData('sharedContext');\n\n// Get current retry count\nconst currentRetries = sharedContext.retry_counts?.[originalTask.id] || 0;\nconst maxRetries = originalTask.max_retries || 3;\n\n// Initialize retry tracking\nif (!sharedContext.retry_counts) {\n  sharedContext.retry_counts = {};\n}\n\nif (currentRetries >= maxRetries) {\n  // Max retries exceeded - mark as failed and continue\n  sharedContext.failed_tasks.push(originalTask.id);\n  sharedContext.current_task++;\n  \n  $setWorkflowStaticData('sharedContext', sharedContext);\n  \n  return {\n    action: 'skip_and_continue',\n    reason: 'Max retries exceeded',\n    task_id: originalTask.id,\n    agent: originalTask.agent,\n    error: errorResult.error || 'Unknown error',\n    final_status: 'failed_permanently'\n  };\n}\n\n// Increment retry count\nsharedContext.retry_counts[originalTask.id] = currentRetries + 1;\n$setWorkflowStaticData('sharedContext', sharedContext);\n\n// Calculate exponential backoff\nconst backoffTime = Math.min(Math.pow(2, currentRetries) * 1000, 30000); // Max 30 seconds\n\nreturn {\n  action: 'retry',\n  task: originalTask,\n  attempt: currentRetries + 1,\n  max_attempts: maxRetries,\n  backoff_time: backoffTime,\n  error_context: errorResult\n};"
+      },
+      "id": "c5d6e7f8-a9b0-1234-cdef-567890123456",
+      "name": "Error Recovery Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3050, 400]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.backoff_time || 2000 }}",
+        "unit": "ms"
+      },
+      "id": "c6d7e8f9-a0b1-2345-cdef-678901234567",
+      "name": "Exponential Backoff",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [3250, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "operation": "equals",
+              "value2": "retry"
+            }
+          ]
+        }
+      },
+      "id": "c7d8e9f0-a1b2-3456-cdef-789012345678",
+      "name": "Check Retry Action",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3450, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.remaining_tasks }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "b5c6d7e8-f9a0-1234-bcde-567890123456",
+      "name": "Check More Tasks",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3050, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate comprehensive final response\nconst sharedContext = $getWorkflowStaticData('sharedContext');\nconst plan = $('Parse Plan').item.json;\n\n// Calculate execution statistics\nconst totalTasks = sharedContext.total_tasks;\nconst completedTasks = sharedContext.completed_tasks.length;\nconst failedTasks = sharedContext.failed_tasks?.length || 0;\nconst successRate = Math.round((completedTasks / totalTasks) * 100);\n\n// Gather all agent results\nconst agentResults = sharedContext.agent_results || {};\n\n// Calculate total execution time\nconst startTime = new Date(sharedContext.started_at);\nconst endTime = new Date();\nconst executionTimeMs = endTime.getTime() - startTime.getTime();\nconst executionTimeSeconds = Math.round(executionTimeMs / 1000);\n\n// Create comprehensive response\nconst finalResponse = {\n  session_id: sharedContext.session_id,\n  user_intent: sharedContext.user_intent,\n  execution_summary: {\n    status: failedTasks > 0 ? 'partial_success' : 'success',\n    total_tasks: totalTasks,\n    completed_tasks: completedTasks,\n    failed_tasks: failedTasks,\n    success_rate: successRate,\n    execution_time_seconds: executionTimeSeconds\n  },\n  agent_results: agentResults,\n  task_details: plan.tasks.map(task => ({\n    id: task.id,\n    agent: task.agent,\n    description: task.description,\n    status: sharedContext.completed_tasks.includes(task.id) ? 'completed' : \n            sharedContext.failed_tasks?.includes(task.id) ? 'failed' : 'pending',\n    result: agentResults[task.agent] || null\n  })),\n  coordination_notes: plan.coordination_notes,\n  completed_at: new Date().toISOString(),\n  \n  // User-friendly summary\n  summary: `Successfully completed ${completedTasks}/${totalTasks} tasks in ${executionTimeSeconds} seconds with ${successRate}% success rate.`,\n  \n  // Next steps recommendations\n  recommendations: failedTasks > 0 ? [\n    'Review failed tasks for potential retry',\n    'Consider adjusting task complexity or timeout settings',\n    'Check agent-specific error logs for troubleshooting'\n  ] : [\n    'All tasks completed successfully',\n    'Results are available for further processing',\n    'System ready for next orchestration request'\n  ]\n};\n\n// Clear workflow static data for next execution\n$setWorkflowStaticData('sharedContext', null);\n$setWorkflowStaticData('results', null);\n\nreturn finalResponse;"
+      },
+      "id": "d6e7f8a9-b0c1-2345-defa-678901234567",
+      "name": "Generate Final Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3250, 700]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Execution-Time",
+              "value": "={{ $json.execution_summary.execution_time_seconds }}s"
+            },
+            {
+              "name": "X-Success-Rate",
+              "value": "={{ $json.execution_summary.success_rate }}%"
+            }
+          ]
+        }
+      },
+      "id": "e7f8a9b0-c1d2-3456-efab-789012345678",
+      "name": "Send Final Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [3450, 700]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"error\": \"Execution denied by user\",\n  \"user_response\": \"{{ $json.response }}\",\n  \"original_plan\": {{ JSON.stringify($('Parse Plan').item.json) }},\n  \"message\": \"Task execution was not approved and has been cancelled.\"\n}",
+        "responseCode": 403
+      },
+      "id": "e8f9a0b1-c2d3-4567-efab-890123456789",
+      "name": "Send Denial Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 200]
+    }
+  ],
+  "connections": {
+    "Voice Input Webhook": {
+      "main": [
+        [
+          {
+            "node": "Preprocess Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preprocess Input": {
+      "main": [
+        [
+          {
+            "node": "Orchestrator Brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orchestrator Brain": {
+      "main": [
+        [
+          {
+            "node": "Parse Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Plan": {
+      "main": [
+        [
+          {
+            "node": "Check Approval Required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval Required": {
+      "main": [
+        [
+          {
+            "node": "Human Approval Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Initialize Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Approval Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Approval Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval Response": {
+      "main": [
+        [
+          {
+            "node": "Initialize Execution",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Denial Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Execution": {
+      "main": [
+        [
+          {
+            "node": "Task Iterator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Task Iterator": {
+      "main": [
+        [
+          {
+            "node": "Check Dependencies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Dependencies": {
+      "main": [
+        [
+          {
+            "node": "Dependencies Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dependencies Check": {
+      "main": [
+        [
+          {
+            "node": "Wait for Dependencies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route to Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Dependencies": {
+      "main": [
+        [
+          {
+            "node": "Check Dependencies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route to Agent": {
+      "main": [
+        [
+          {
+            "node": "ABACUS Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GENSPARK Fallback Handler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MINIMAX Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MANUS Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MVP Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ABACUS Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GENSPARK Fallback Handler": {
+      "main": [
+        [
+          {
+            "node": "MANUS Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MINIMAX Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MANUS Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MVP Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Agent Result": {
+      "main": [
+        [
+          {
+            "node": "Inter-Agent Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inter-Agent Wait": {
+      "main": [
+        [
+          {
+            "node": "Check Task Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Task Success": {
+      "main": [
+        [
+          {
+            "node": "Check More Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Recovery Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Recovery Logic": {
+      "main": [
+        [
+          {
+            "node": "Exponential Backoff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exponential Backoff": {
+      "main": [
+        [
+          {
+            "node": "Check Retry Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Retry Action": {
+      "main": [
+        [
+          {
+            "node": "Route to Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check More Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check More Tasks": {
+      "main": [
+        [
+          {
+            "node": "Task Iterator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Final Response": {
+      "main": [
+        [
+          {
+            "node": "Send Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "versionId": "01234567-89ab-cdef-0123-456789abcdef",
+  "meta": {
+    "instanceId": "8c8c5237b8e37b006a7adce87f4369350c58e41f3ca9de16196d3197f69eabcd"
+  },
+  "id": "ENI6HpIGqFBLhOip",
+  "tags": ["multi-agent", "ai-orchestration", "aeros", "voice-assistant"]
+}
