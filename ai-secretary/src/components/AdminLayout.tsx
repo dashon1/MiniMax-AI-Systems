@@ -11,6 +11,8 @@ export function AdminLayout() {
     { name: 'User Management', href: '/admin/users', current: location.pathname === '/admin/users' },
     { name: 'Agent Management', href: '/admin/agents', current: location.pathname === '/admin/agents' },
     { name: 'Credit Management', href: '/admin/credits', current: location.pathname === '/admin/credits' },
+    { name: 'API Management', href: '/admin/apis', current: location.pathname === '/admin/apis' },
+    { name: 'API Testing', href: '/admin/api-testing', current: location.pathname === '/admin/api-testing' },
     { name: 'System Analytics', href: '/admin/analytics', current: location.pathname === '/admin/analytics' }
   ]
 

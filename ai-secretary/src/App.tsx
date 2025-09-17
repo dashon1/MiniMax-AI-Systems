@@ -12,6 +12,8 @@ import { AdminDashboard } from '@/pages/AdminDashboard'
 import { AdminUsers } from '@/pages/AdminUsers'
 import { AdminAgents } from '@/pages/AdminAgents'
 import { AdminCredits } from '@/pages/AdminCredits'
+import { AdminAPIManagement } from '@/pages/AdminAPIManagement'
+import { APITestingPlayground } from '@/pages/APITestingPlayground'
 import { UserDashboard } from '@/pages/UserDashboard'
 import { Toaster } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
@@ -57,6 +59,8 @@ function AppContent() {
         <Route path="users" element={<AdminUsers />} />
         <Route path="agents" element={<AdminAgents />} />
         <Route path="credits" element={<AdminCredits />} />
+        <Route path="apis" element={<AdminAPIManagement />} />
+        <Route path="api-testing" element={<APITestingPlayground />} />
         <Route path="analytics" element={<AdminDashboard />} />
       </Route>
     </Routes>
