@@ -136,36 +136,88 @@ export function BrainVisualization() {
               <Brain className="w-20 h-20 text-white" />
             </motion.div>
 
-            {/* AEROS CONCEPT Text */}
+            {/* CONCEPT Text (Above Brain) */}
             <motion.div
-              className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-center"
+              className="absolute -top-12 left-1/2 transform -translate-x-1/2 text-center"
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1, duration: 0.8 }}
             >
-              <div className="text-white text-lg font-bold tracking-wider opacity-90">
-                AEROS CONCEPT
+              <div className="text-white text-xl font-bold tracking-[0.3em] opacity-80">
+                CONCEPT
               </div>
             </motion.div>
 
-            {/* ARA M5 Text */}
+            {/* ARA M5 Text (Below Brain) - Enhanced Prominence */}
             <motion.div
-              className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center"
+              className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1.2, duration: 0.8 }}
             >
-              <div 
-                className="text-4xl font-black tracking-wider"
+              {/* Enhanced Glow Background for ARA M5 */}
+              <motion.div
+                className="absolute inset-0 rounded-full"
                 style={{
-                  background: 'linear-gradient(135deg, #00D4FF 0%, #FF0080 100%)',
+                  background: 'radial-gradient(circle, rgba(0,212,255,0.4) 0%, rgba(255,0,128,0.4) 100%)',
+                  filter: 'blur(30px)',
+                  scale: 2
+                }}
+                animate={{
+                  scale: [2, 2.5, 2],
+                  opacity: [0.4, 0.7, 0.4]
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut'
+                }}
+              />
+              
+              <motion.div 
+                className="relative text-7xl font-black tracking-[0.2em]"
+                style={{
+                  background: 'linear-gradient(135deg, #00D4FF 0%, #FF0080 50%, #00FF88 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  textShadow: '0 0 20px rgba(0,212,255,0.5)'
+                  filter: 'drop-shadow(0 0 30px rgba(0,212,255,0.8)) drop-shadow(0 0 60px rgba(255,0,128,0.6))'
+                }}
+                animate={{
+                  textShadow: [
+                    '0 0 30px rgba(0,212,255,0.8), 0 0 60px rgba(255,0,128,0.6)',
+                    '0 0 50px rgba(255,0,128,1), 0 0 80px rgba(0,255,136,0.8)', 
+                    '0 0 30px rgba(0,212,255,0.8), 0 0 60px rgba(255,0,128,0.6)'
+                  ]
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: 'easeInOut'
                 }}
               >
                 ARA M5
-              </div>
+              </motion.div>
+              
+              {/* Additional subtle glow ring around ARA M5 */}
+              <motion.div
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-32 border border-transparent rounded-full"
+                style={{
+                  borderImage: 'linear-gradient(135deg, #00D4FF, #FF0080, #00FF88) 1',
+                  boxShadow: 'inset 0 0 30px rgba(0,212,255,0.2), 0 0 40px rgba(255,0,128,0.3)'
+                }}
+                animate={{
+                  boxShadow: [
+                    'inset 0 0 30px rgba(0,212,255,0.2), 0 0 40px rgba(255,0,128,0.3)',
+                    'inset 0 0 50px rgba(255,0,128,0.3), 0 0 60px rgba(0,255,136,0.4)',
+                    'inset 0 0 30px rgba(0,212,255,0.2), 0 0 40px rgba(255,0,128,0.3)'
+                  ]
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: 'easeInOut'
+                }}
+              />
             </motion.div>
           </div>
         </div>
