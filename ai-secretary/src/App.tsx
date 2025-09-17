@@ -3,8 +3,16 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { RedesignedAuthPage } from '@/components/RedesignedAuthPage'
 import { Dashboard } from '@/components/Dashboard'
+import { AdminRoute } from '@/components/AdminRoute'
+import { AdminLayout } from '@/components/AdminLayout'
+import { AdminDashboard } from '@/pages/AdminDashboard'
+import { AdminUsers } from '@/pages/AdminUsers'
+import { AdminAgents } from '@/pages/AdminAgents'
+import { AdminCredits } from '@/pages/AdminCredits'
+import { UserDashboard } from '@/pages/UserDashboard'
 import { Toaster } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
 
@@ -33,7 +41,26 @@ function AppContent() {
     )
   }
 
-  return user ? <Dashboard /> : <RedesignedAuthPage />
+  return (
+    <Routes>
+      <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <RedesignedAuthPage />} />
+      <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/" replace />} />
+      <Route path="/user" element={user ? <UserDashboard /> : <Navigate to="/" replace />} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin" element={
+        <AdminRoute>
+          <AdminLayout />
+        </AdminRoute>
+      }>
+        <Route index element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="agents" element={<AdminAgents />} />
+        <Route path="credits" element={<AdminCredits />} />
+        <Route path="analytics" element={<AdminDashboard />} />
+      </Route>
+    </Routes>
+  )
 }
 
 function App() {
@@ -42,7 +69,8 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <SubscriptionProvider>
-            <AppContent />
+            <Router>
+              <AppContent />
             <Toaster
               position="top-right"
               toastOptions={{
@@ -69,6 +97,7 @@ function App() {
                 },
               }}
             />
+            </Router>
           </SubscriptionProvider>
         </AuthProvider>
       </ThemeProvider>
