@@ -12,7 +12,9 @@ import { AgentOverview } from '@/components/AgentOverview'
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard'
 import { GamificationDashboard } from '@/components/GamificationDashboard'
 import { VoiceCommandCenter } from '@/components/VoiceCommandCenter'
+import { SimpleVoiceInput } from '@/components/SimpleVoiceInput'
 import { VoiceResponseCenter } from '@/components/VoiceResponseCenter'
+import { VoiceDebugger } from '@/components/VoiceDebugger'
 import { SuperAgentCollectives } from '@/components/SuperAgentCollectives'
 import { FloatingChatBot } from '@/components/FloatingChatBot'
 import { AIWelcomeBanner } from '@/components/welcome/AIWelcomeBanner'
@@ -21,7 +23,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext'
 import { TierManagement } from '@/components/TierManagement'
 import { CommandCenterBackground } from '@/components/ui/command-center-background'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { LogOut, User, BarChart3, Bot, MessageSquare, Clock, Trophy, Sparkles, Mic, Users, Zap, Brain, Target, Shield, Crown, CreditCard } from 'lucide-react'
+import { LogOut, User, BarChart3, Bot, MessageSquare, Clock, Trophy, Sparkles, Mic, Users, Zap, Brain, Target, Shield, Crown, CreditCard, AlertCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
@@ -227,7 +229,7 @@ export function Dashboard() {
           transition={{ delay: 0.5, duration: 0.6 }}
         >
           <Tabs defaultValue="command" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 bg-card/80 backdrop-blur-sm border-2 border-command-accent/20 h-14">
+            <TabsList className="grid w-full grid-cols-8 bg-card/80 backdrop-blur-sm border-2 border-command-accent/20 h-14">
               <TabsTrigger 
                 value="command" 
                 className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-command-accent/20 data-[state=active]:to-command-success/20 data-[state=active]:text-command-accent"
@@ -277,6 +279,13 @@ export function Dashboard() {
                 <Clock className="h-4 w-4" />
                 <span className="text-xs font-medium">History</span>
               </TabsTrigger>
+              <TabsTrigger 
+                value="debug" 
+                className="flex flex-col items-center gap-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500/20 data-[state=active]:to-pink-500/20 data-[state=active]:text-red-400"
+              >
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-xs font-medium">Debug</span>
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="command" className="space-y-6">
@@ -319,13 +328,22 @@ export function Dashboard() {
               >
                 {/* Voice Input and Output Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <VoiceCommandCenter 
-                    onTaskSubmit={handleVoiceTaskSubmit}
+                  <SimpleVoiceInput 
+                    onSubmit={async (text) => await handleVoiceTaskSubmit(text, text)}
                     isSubmitting={isCreating}
+                    placeholder="Type your task or use voice input to speak to the AI..."
                   />
                   <VoiceResponseCenter 
                     responses={voiceResponses}
                     onClear={handleClearVoiceResponses}
+                  />
+                </div>
+                
+                {/* Original Voice Command Center for comparison */}
+                <div className="grid grid-cols-1 gap-6">
+                  <VoiceCommandCenter 
+                    onTaskSubmit={handleVoiceTaskSubmit}
+                    isSubmitting={isCreating}
                   />
                 </div>
                 
@@ -373,6 +391,16 @@ export function Dashboard() {
                 transition={{ duration: 0.5 }}
               >
                 <TaskHistory />
+              </motion.div>
+            </TabsContent>
+            
+            <TabsContent value="debug">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <VoiceDebugger />
               </motion.div>
             </TabsContent>
           </Tabs>
