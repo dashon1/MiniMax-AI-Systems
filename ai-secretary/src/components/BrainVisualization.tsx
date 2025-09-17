@@ -150,10 +150,11 @@ export function BrainVisualization() {
 
             {/* ARA M5 Text (Below Brain) - Enhanced Prominence */}
             <motion.div
-              className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center"
+              className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 text-center z-30"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1.2, duration: 0.8 }}
+              style={{ zIndex: 30 }}
             >
               {/* Enhanced Glow Background for ARA M5 */}
               <motion.div
@@ -175,12 +176,13 @@ export function BrainVisualization() {
               />
               
               <motion.div 
-                className="relative text-7xl font-black tracking-[0.2em]"
+                className="relative text-7xl font-black tracking-[0.2em] z-40"
                 style={{
                   background: 'linear-gradient(135deg, #00D4FF 0%, #FF0080 50%, #00FF88 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  filter: 'drop-shadow(0 0 30px rgba(0,212,255,0.8)) drop-shadow(0 0 60px rgba(255,0,128,0.6))'
+                  filter: 'drop-shadow(0 0 30px rgba(0,212,255,0.8)) drop-shadow(0 0 60px rgba(255,0,128,0.6))',
+                  zIndex: 40
                 }}
                 animate={{
                   textShadow: [
