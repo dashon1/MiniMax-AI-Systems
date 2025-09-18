@@ -1,0 +1,173 @@
+
+> react_repo@0.0.0 build
+> pnpm install --prefer-offline && rm -rf node_modules/.vite-temp && tsc -b && vite build
+
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +437
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Progress: resolved 437, reused 0, downloaded 0, added 0
+Progress: resolved 437, reused 0, downloaded 44, added 11
+Progress: resolved 437, reused 0, downloaded 128, added 45
+Progress: resolved 437, reused 0, downloaded 201, added 86
+Progress: resolved 437, reused 0, downloaded 312, added 139
+Progress: resolved 437, reused 0, downloaded 402, added 180
+Progress: resolved 437, reused 0, downloaded 437, added 437, done
+
+╭ Warning ─────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│   Ignored build scripts: esbuild.                                            │
+│   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+│   to run scripts.                                                            │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+Done in 11.1s using pnpm v10.12.4
+src/components/TaskHistory.tsx:189:16 - error TS17008: JSX element 'motion.div' has no corresponding closing tag.
+
+189               <motion.div
+                   ~~~~~~~~~~
+
+src/components/TaskHistory.tsx:208:15 - error TS17002: Expected corresponding JSX closing tag for 'motion.div'.
+
+208             </div>
+                  ~~~
+
+src/components/TaskHistory.tsx:209:13 - error TS17002: Expected corresponding JSX closing tag for 'CollapsibleTrigger'.
+
+209           </motion.div>
+                ~~~~~~~~~~
+
+src/components/TaskHistory.tsx:210:11 - error TS17002: Expected corresponding JSX closing tag for 'Collapsible'.
+
+210         </CollapsibleTrigger>
+              ~~~~~~~~~~~~~~~~~~
+
+src/components/TaskHistory.tsx:276:11 - error TS17002: Expected corresponding JSX closing tag for 'AIGlowCard'.
+
+276         </Collapsible>
+              ~~~~~~~~~~~
+
+src/components/TaskHistory.tsx:277:9 - error TS17002: Expected corresponding JSX closing tag for 'motion.div'.
+
+277       </AIGlowCard>
+            ~~~~~~~~~~
+
+src/components/TaskHistory.tsx:278:5 - error TS1005: ')' expected.
+
+278     </motion.div>
+        ~~
+
+src/components/TaskHistory.tsx:279:3 - error TS1109: Expression expected.
+
+279   )
+      ~
+
+src/components/TaskHistoryFixed.tsx:189:16 - error TS17008: JSX element 'motion.div' has no corresponding closing tag.
+
+189               <motion.div
+                   ~~~~~~~~~~
+
+src/components/TaskHistoryFixed.tsx:208:15 - error TS17002: Expected corresponding JSX closing tag for 'motion.div'.
+
+208             </div>
+                  ~~~
+
+src/components/TaskHistoryFixed.tsx:209:13 - error TS17002: Expected corresponding JSX closing tag for 'CollapsibleTrigger'.
+
+209           </motion.div>
+                ~~~~~~~~~~
+
+src/components/TaskHistoryFixed.tsx:210:11 - error TS17002: Expected corresponding JSX closing tag for 'Collapsible'.
+
+210         </CollapsibleTrigger>
+              ~~~~~~~~~~~~~~~~~~
+
+src/components/TaskHistoryFixed.tsx:276:11 - error TS17002: Expected corresponding JSX closing tag for 'AIGlowCard'.
+
+276         </Collapsible>
+              ~~~~~~~~~~~
+
+src/components/TaskHistoryFixed.tsx:277:9 - error TS17002: Expected corresponding JSX closing tag for 'motion.div'.
+
+277       </AIGlowCard>
+            ~~~~~~~~~~
+
+src/components/TaskHistoryFixed.tsx:278:5 - error TS1005: ')' expected.
+
+278     </motion.div>
+        ~~
+
+src/components/TaskHistoryFixed.tsx:279:3 - error TS1109: Expression expected.
+
+279   )
+      ~
+
+src/hooks/useTasks.ts:235:6 - error TS1005: ',' expected.
+
+235   }) edge function:', {
+         ~~~~
+
+src/hooks/useTasks.ts:235:11 - error TS1005: ',' expected.
+
+235   }) edge function:', {
+              ~~~~~~~~
+
+src/hooks/useTasks.ts:235:19 - error TS1003: Identifier expected.
+
+235   }) edge function:', {
+                      ~
+
+src/hooks/useTasks.ts:235:24 - error TS1002: Unterminated string literal.
+
+235   }) edge function:', {
+                           
+
+src/hooks/useTasks.ts:237:15 - error TS1005: ';' expected.
+
+237         status: insertedTask.status,
+                  ~
+
+src/hooks/useTasks.ts:238:23 - error TS1005: ';' expected.
+
+238         selected_agent: insertedTask.selected_agent
+                          ~
+
+src/hooks/useTasks.ts:239:8 - error TS1128: Declaration or statement expected.
+
+239       })
+           ~
+
+src/hooks/useTasks.ts:245:5 - error TS1128: Declaration or statement expected.
+
+245     },
+        ~
+
+src/hooks/useTasks.ts:245:6 - error TS1128: Declaration or statement expected.
+
+245     },
+         ~
+
+src/hooks/useTasks.ts:251:12 - error TS1005: ';' expected.
+
+251     onError: (error: any) => {
+               ~
+
+src/hooks/useTasks.ts:255:3 - error TS1128: Declaration or statement expected.
+
+255   })
+      ~
+
+src/hooks/useTasks.ts:255:4 - error TS1128: Declaration or statement expected.
+
+255   })
+       ~
+
+src/hooks/useTasks.ts:307:1 - error TS1128: Declaration or statement expected.
+
+307 }
+    ~
+
+
+Found 29 errors.
+

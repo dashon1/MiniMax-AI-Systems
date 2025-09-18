@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { AILoadingSpinner } from '@/components/ui/ai-loading-spinner'
 import { NeuralBackground } from '@/components/ui/neural-background'
 import { AIGlowCard } from '@/components/ui/ai-glow-card'
+import { useAuth } from '@/contexts/AuthContext'
 import { 
   Clock, 
   CheckCircle2, 
@@ -26,10 +27,16 @@ import {
   Sparkles,
   Activity,
   Timer,
-  Cpu
+  Cpu,
+  RefreshCw,
+  AlertTriangle,
+  Shield,
+  Database,
+  Info
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
+import toast from 'react-hot-toast'
 
 const agentIcons = {
   genspark: Brain,
@@ -111,314 +118,425 @@ function TaskCard({ task }: { task: Task }) {
       >
         <NeuralBackground variant="subtle" color={statusGlowColors[task.status]} />
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger asChild>
-          <motion.div 
-            className="p-4 hover:bg-muted/30 cursor-pointer transition-colors relative"
-            whileHover={{ backgroundColor: 'rgba(var(--muted), 0.5)' }}
-          >
-            <div className="flex items-start justify-between gap-3 relative">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                  >
-                    <Badge className={`${statusColors[task.status]} border`}>
-                      {task.status === 'processing' ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                        >
+          <CollapsibleTrigger asChild>
+            <motion.div 
+              className="p-4 hover:bg-muted/30 cursor-pointer transition-colors relative"
+            >
+              <div className="flex items-start justify-between gap-3 relative">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                    >
+                      <Badge className={`${statusColors[task.status]} border`}>
+                        {task.status === 'processing' ? (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                          >
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                          </motion.div>
+                        ) : (
                           <StatusIcon className="h-3 w-3 mr-1" />
-                        </motion.div>
-                      ) : (
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                      )}
-                      {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                    </Badge>
-                  </motion.div>
+                        )}
+                        {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
+                      </Badge>
+                    </motion.div>
+                    
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Badge className={`${agentColors[task.selected_agent as keyof typeof agentColors] || agentColors.minimax} border`}>
+                        <AgentIcon className="h-3 w-3 mr-1" />
+                        {task.selected_agent}
+                      </Badge>
+                    </motion.div>
+                  </div>
                   
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <Badge variant="outline" className={`${agentColors[task.selected_agent as keyof typeof agentColors]} border`}>
-                      <AgentIcon className="h-3 w-3 mr-1" />
-                      {task.selected_agent.charAt(0).toUpperCase() + task.selected_agent.slice(1)}
-                    </Badge>
-                  </motion.div>
-                  
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                  <motion.p 
+                    className="text-sm font-medium text-muted-foreground leading-relaxed mb-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <Badge 
-                      variant={task.priority === 'high' ? 'destructive' : task.priority === 'low' ? 'secondary' : 'default'}
-                      className="border"
-                    >
-                      {task.priority} priority
-                    </Badge>
+                    {task.task_content.length > 100 
+                      ? `${task.task_content.substring(0, 100)}...` 
+                      : task.task_content}
+                  </motion.p>
+                  
+                  <motion.div 
+                    className="flex items-center gap-4 text-xs text-muted-foreground"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Timer className="h-3 w-3" />
+                      ID: {task.id.slice(-8)}
+                    </div>
                   </motion.div>
                 </div>
                 
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                  {task.task_content}
-                </p>
-                
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <motion.div 
-                    className="flex items-center gap-1"
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    <Calendar className="h-3 w-3" />
-                    {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
-                  </motion.div>
+                <motion.div
+                  className="flex items-center gap-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
                   {task.estimated_cost > 0 && (
-                    <motion.div 
-                      className="flex items-center gap-1"
-                      whileHover={{ scale: 1.05 }}
-                    >
-                      <DollarSign className="h-3 w-3" />
-                      ${task.estimated_cost.toFixed(4)}
-                    </motion.div>
+                    <Badge variant="outline" className="text-xs">
+                      <DollarSign className="h-3 w-3 mr-1" />
+                      ${task.estimated_cost}
+                    </Badge>
                   )}
-                  <motion.div 
-                    className="flex items-center gap-1 text-primary"
-                    whileHover={{ scale: 1.05 }}
+                  <motion.div
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <Sparkles className="h-3 w-3" />
-                    AI Processed
+                    {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                   </motion.div>
-                </div>
+                </motion.div>
               </div>
-              
-              <motion.div 
-                className="flex items-center gap-1"
-                animate={{ rotate: isOpen ? 90 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </motion.div>
-            </div>
-          </motion.div>
-        </CollapsibleTrigger>
-        
-        <CollapsibleContent>
-          <motion.div 
-            className="px-4 pb-4 border-t bg-muted/20 backdrop-blur-sm relative"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="pt-4 space-y-4 relative">
-              <div>
-                <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                  <Cpu className="h-4 w-4 text-primary" />
-                  Task Details
-                </h4>
-                <div className="p-3 bg-card/50 rounded-lg border border-border/50">
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{task.task_content}</p>
-                </div>
-              </div>
-              
+            </motion.div>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300">
+            <motion.div 
+              className="border-t border-border/50 p-4 bg-muted/20"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
               {task.agent_reasoning && (
-                <div>
-                  <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                    <Brain className="h-4 w-4 text-primary" />
-                    AI Neural Network Reasoning
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    Agent Selection Reasoning
                   </h4>
-                  <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                    <p className="text-sm text-muted-foreground">{task.agent_reasoning}</p>
-                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed bg-background/50 p-3 rounded border">
+                    {task.agent_reasoning}
+                  </p>
                 </div>
               )}
               
-              <AnimatePresence>
-                {loadingResult && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="flex items-center gap-2 text-sm text-muted-foreground"
-                  >
-                    <AILoadingSpinner size="sm" variant="neural" />
-                    Loading AI response...
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {(task.status === 'completed' || task.status === 'failed') && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Task Result
+                  </h4>
+                  {loadingResult ? (
+                    <div className="flex items-center justify-center p-8">
+                      <AILoadingSpinner size="md" />
+                    </div>
+                  ) : result ? (
+                    <div className="bg-background/50 p-3 rounded border">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Completed {formatDistanceToNow(new Date(result.created_at), { addSuffix: true })}
+                      </p>
+                      <ScrollArea className="max-h-48">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {result.agent_response}
+                        </p>
+                      </ScrollArea>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      No detailed result available
+                    </p>
+                  )}
+                </div>
+              )}
               
-              <AnimatePresence>
-                {result && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                  >
-                    <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-primary" />
-                      AI Agent Response
-                    </h4>
-                    {result.error_message ? (
-                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-700 dark:text-red-400">
-                        <div className="flex items-center gap-2 mb-2">
-                          <AlertCircle className="h-4 w-4" />
-                          <strong>Processing Error</strong>
-                        </div>
-                        {result.error_message}
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-card/50 border border-border/50 rounded-lg text-sm backdrop-blur-sm">
-                        <div className="whitespace-pre-wrap">{result.agent_response}</div>
-                        
-                        {result.processing_time_ms && (
-                          <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-3 gap-4 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Timer className="h-3 w-3" />
-                              <span>{(result.processing_time_ms / 1000).toFixed(1)}s</span>
-                            </div>
-                            {result.tokens_used && (
-                              <div className="flex items-center gap-1">
-                                <Cpu className="h-3 w-3" />
-                                <span>{result.tokens_used.toLocaleString()} tokens</span>
-                              </div>
-                            )}
-                            {result.actual_cost && (
-                              <div className="flex items-center gap-1">
-                                <DollarSign className="h-3 w-3" />
-                                <span>${result.actual_cost.toFixed(4)}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </motion.div>
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="font-medium">Created:</span>
+                  <br />
+                  {new Date(task.created_at).toLocaleString()}
+                </div>
+                {task.updated_at && (
+                  <div>
+                    <span className="font-medium">Updated:</span>
+                    <br />
+                    {new Date(task.updated_at).toLocaleString()}
+                  </div>
                 )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </CollapsibleContent>
-      </Collapsible>
+              </div>
+            </motion.div>
+          </CollapsibleContent>
+        </Collapsible>
       </AIGlowCard>
     </motion.div>
   )
 }
 
-export function TaskHistory() {
-  const { tasks, loading } = useTasks()
+function DiagnosticPanel() {
+  const { user } = useAuth()
+  const { diagnoseTaskHistory, authDebugInfo } = useTasks()
+  const [diagnostic, setDiagnostic] = useState<any>(null)
+  const [isRunning, setIsRunning] = useState(false)
+
+  const runDiagnostic = async () => {
+    setIsRunning(true)
+    try {
+      const result = await diagnoseTaskHistory()
+      setDiagnostic(result)
+      
+      if (result.success) {
+        toast.success('Diagnostic completed successfully')
+      } else {
+        toast.error('Diagnostic found issues')
+      }
+    } catch (error) {
+      console.error('Diagnostic failed:', error)
+      toast.error('Diagnostic failed to run')
+    } finally {
+      setIsRunning(false)
+    }
+  }
+
+  return (
+    <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-900/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Shield className="h-4 w-4 text-orange-600" />
+          Task History Diagnostic
+        </CardTitle>
+        <CardDescription className="text-xs">
+          Debug authentication and data access issues
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={runDiagnostic} 
+            disabled={isRunning || !user}
+            size="sm"
+            variant="outline"
+            className="text-xs"
+          >
+            {isRunning ? (
+              <>
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                <Database className="h-3 w-3 mr-1" />
+                Run Diagnostic
+              </>
+            )}
+          </Button>
+        </div>
+
+        {authDebugInfo && (
+          <div className="text-xs space-y-1">
+            <div className="font-medium">Local Auth Status:</div>
+            <div className="pl-2 text-muted-foreground">
+              Status: {authDebugInfo.status}<br />
+              {authDebugInfo.user_id && `User ID: ${authDebugInfo.user_id.slice(-8)}`}<br />
+              Last Check: {new Date(authDebugInfo.timestamp).toLocaleTimeString()}
+            </div>
+          </div>
+        )}
+
+        {diagnostic && (
+          <div className="text-xs space-y-2 border-t pt-2">
+            <div className="font-medium">Diagnostic Results:</div>
+            {diagnostic.success ? (
+              <div className="space-y-1">
+                <div className="text-green-600">✓ Authentication working</div>
+                <div className="text-green-600">✓ User ID: {diagnostic.data?.user_id?.slice(-8)}</div>
+                <div className="text-green-600">✓ Total tasks: {diagnostic.data?.admin_query_results?.total_tasks || 0}</div>
+                <div className={diagnostic.data?.rls_working ? 'text-green-600' : 'text-red-600'}>
+                  {diagnostic.data?.rls_working ? '✓' : '✗'} RLS policies working
+                </div>
+                {diagnostic.data?.session_refresh && (
+                  <div className="text-blue-600">
+                    → Session refresh: {diagnostic.data.session_refresh.success ? 'Success' : 'Failed'}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-red-600">
+                ✗ Error: {diagnostic.error}
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function TaskHistory() {
+  const { tasks, loading, error, refetch } = useTasks()
+  const { user } = useAuth()
+  const [showDiagnostic, setShowDiagnostic] = useState(false)
+
+  // Show diagnostic panel if no tasks are found and user is authenticated
+  useEffect(() => {
+    if (user && !loading && tasks.length === 0 && !error) {
+      setShowDiagnostic(true)
+    }
+  }, [user, loading, tasks.length, error])
 
   if (loading) {
     return (
-      <Card className="w-full relative overflow-hidden border-primary/20">
-        <NeuralBackground variant="subtle" color="blue" />
-        <CardHeader className="relative">
-          <CardTitle className="flex items-center gap-2">
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-            >
-              <Activity className="h-5 w-5 text-primary" />
-            </motion.div>
-            AI Task History
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="relative">
-          <div className="flex flex-col items-center justify-center py-8 gap-4">
-            <AILoadingSpinner size="md" variant="neural" text="Loading task history..." />
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div 
+        className="flex flex-col items-center justify-center p-12 space-y-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <AILoadingSpinner size="lg" />
+        <p className="text-sm text-muted-foreground">Loading your task history...</p>
+      </motion.div>
+    )
+  }
+
+  if (error) {
+    return (
+      <motion.div 
+        className="flex flex-col items-center justify-center p-12 space-y-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <AlertTriangle className="h-12 w-12 text-red-500" />
+        <div className="text-center space-y-2">
+          <p className="text-lg font-medium">Failed to load task history</p>
+          <p className="text-sm text-muted-foreground">
+            {error.message || 'An unexpected error occurred'}
+          </p>
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again
+          </Button>
+        </div>
+      </motion.div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <motion.div 
+        className="flex flex-col items-center justify-center p-12 space-y-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <User className="h-12 w-12 text-muted-foreground" />
+        <div className="text-center space-y-2">
+          <p className="text-lg font-medium">Please sign in</p>
+          <p className="text-sm text-muted-foreground">
+            Sign in to view your task history
+          </p>
+        </div>
+      </motion.div>
     )
   }
 
   return (
-    <Card className="w-full relative overflow-hidden border-primary/20">
-      <NeuralBackground variant="subtle" color="multi" />
-      <CardHeader className="relative">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <motion.div
-                className="p-2 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg shadow-lg"
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <Clock className="h-5 w-5 text-white" />
-              </motion.div>
-              AI Task History
-              <motion.div
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Sparkles className="h-4 w-4 text-primary" />
-              </motion.div>
-            </CardTitle>
-            <CardDescription className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              {tasks.length > 0 ? `${tasks.length} AI-orchestrated tasks` : 'No tasks submitted yet'}
-            </CardDescription>
-          </div>
-          
-          {tasks.length > 0 && (
-            <motion.div
-              className="text-right"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="text-2xl font-bold text-primary">
-                {tasks.filter(t => t.status === 'completed').length}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Completed
-              </div>
-            </motion.div>
-          )}
+    <div className="space-y-6">
+      <motion.div 
+        className="flex items-center justify-between"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Task History</h2>
+          <p className="text-muted-foreground">
+            {tasks.length > 0 
+              ? `${tasks.length} task${tasks.length === 1 ? '' : 's'} found`
+              : 'Your AI task executions will appear here'
+            }
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="relative">
-        <ScrollArea className="h-[600px] pr-4">
-          {tasks.length === 0 ? (
-            <motion.div 
-              className="text-center py-8 text-muted-foreground"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
+        
+        <div className="flex items-center gap-2">
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          
+          <Button 
+            onClick={() => setShowDiagnostic(!showDiagnostic)} 
+            variant="outline" 
+            size="sm"
+          >
+            <Info className="h-4 w-4 mr-2" />
+            Debug
+          </Button>
+        </div>
+      </motion.div>
+
+      {showDiagnostic && <DiagnosticPanel />}
+
+      <AnimatePresence mode="wait">
+        {tasks.length === 0 ? (
+          <motion.div
+            key="empty"
+            className="flex flex-col items-center justify-center p-16 space-y-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+          >
+            <AIGlowCard glowColor="blue" intensity="low" className="p-8">
+              <NeuralBackground variant="subtle" color="blue" />
+              <div className="flex flex-col items-center space-y-4 relative">
+                <motion.div
+                  animate={{ 
+                    rotate: [0, 360],
+                    scale: [1, 1.1, 1]
+                  }}
+                  transition={{ 
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  <Activity className="h-16 w-16 text-blue-500 opacity-50" />
+                </motion.div>
+                <div className="text-center space-y-2">
+                  <h3 className="text-lg font-medium">No AI tasks performed yet</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Start by creating your first task using voice commands or the task submission form. 
+                    Your completed tasks will appear here with detailed results and execution history.
+                  </p>
+                </div>
+              </div>
+            </AIGlowCard>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="tasks"
+            className="space-y-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            {tasks.map((task, index) => (
               <motion.div
+                key={task.id}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ 
-                  rotate: [0, 10, -10, 0],
-                  scale: [1, 1.1, 1]
-                }}
-                transition={{ 
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: 'easeInOut'
+                  opacity: 1, 
+                  y: 0,
+                  transition: { delay: index * 0.1 }
                 }}
               >
-                <Brain className="h-12 w-12 mx-auto mb-3 text-muted/50" />
+                <TaskCard task={task} />
               </motion.div>
-              <p className="font-medium">No AI tasks orchestrated yet.</p>
-              <p className="text-sm">Submit your first task above to begin your AI journey!</p>
-            </motion.div>
-          ) : (
-            <div className="space-y-3">
-              {tasks.map((task, index) => (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <TaskCard task={task} />
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-      </CardContent>
-    </Card>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }

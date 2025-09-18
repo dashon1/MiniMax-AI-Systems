@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, Task, TaskResult, AgentCapability } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -7,17 +7,72 @@ import toast from 'react-hot-toast'
 export function useTasks() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const [authDebugInfo, setAuthDebugInfo] = useState<any>(null)
 
-  // Fetch user's tasks
+  // Enhanced authentication debugging
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!user) {
+        console.log('🔍 Auth Debug: No user in context')
+        setAuthDebugInfo({ status: 'no_user', timestamp: new Date().toISOString() })
+        return
+      }
+
+      console.log('🔍 Auth Debug: User found in context:', user.id)
+      
+      // Check current session
+      const { data: session, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError) {
+        console.error('🔍 Auth Debug: Session error:', sessionError)
+        setAuthDebugInfo({ 
+          status: 'session_error', 
+          error: sessionError.message,
+          timestamp: new Date().toISOString() 
+        })
+        return
+      }
+
+      if (!session?.session) {
+        console.log('🔍 Auth Debug: No active session')
+        setAuthDebugInfo({ 
+          status: 'no_session',
+          timestamp: new Date().toISOString() 
+        })
+        return
+      }
+
+      console.log('🔍 Auth Debug: Active session found for user:', session.session.user.id)
+      setAuthDebugInfo({ 
+        status: 'authenticated',
+        user_id: session.session.user.id,
+        session_expires: session.session.expires_at,
+        timestamp: new Date().toISOString()
+      })
+    }
+
+    checkAuth()
+  }, [user])
+
+  // Fetch user's tasks with enhanced debugging
   const tasksQuery = useQuery({
     queryKey: ['tasks', user?.id],
     queryFn: async () => {
       if (!user) {
-        console.log('No user found for tasks query')
+        console.log('📋 Tasks Query: No user found')
         return []
       }
       
-      console.log('Fetching tasks for user:', user.id)
+      console.log('📋 Tasks Query: Starting for user:', user.id)
+      
+      // First, verify current session
+      const { data: session } = await supabase.auth.getSession()
+      if (!session?.session) {
+        console.error('📋 Tasks Query: No active session during query')
+        throw new Error('No active session. Please sign in again.')
+      }
+
+      console.log('📋 Tasks Query: Session verified, querying tasks...')
       
       const { data, error } = await supabase
         .from('tasks')
@@ -26,14 +81,62 @@ export function useTasks() {
         .order('created_at', { ascending: false })
       
       if (error) {
-        console.error('Error fetching tasks:', error)
+        console.error('📋 Tasks Query: Database error:', error)
+        
+        // If it's an auth error, try to refresh the session
+        if (error.message?.includes('JWT') || error.message?.includes('expired')) {
+          console.log('📋 Tasks Query: Attempting session refresh...')
+          
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+          
+          if (refreshError) {
+            console.error('📋 Tasks Query: Session refresh failed:', refreshError)
+            throw new Error('Session expired. Please sign in again.')
+          }
+          
+          console.log('📋 Tasks Query: Session refreshed, retrying query...')
+          
+          // Retry the query with refreshed session
+          const { data: retryData, error: retryError } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+          
+          if (retryError) {
+            console.error('📋 Tasks Query: Retry failed:', retryError)
+            throw retryError
+          }
+          
+          console.log('📋 Tasks Query: Retry successful, found', retryData?.length || 0, 'tasks')
+          return retryData as Task[]
+        }
+        
         throw error
       }
       
-      console.log('Tasks fetched successfully:', data?.length || 0, 'tasks')
+      console.log('📋 Tasks Query: Success! Found', data?.length || 0, 'tasks')
+      
+      // Log first few task IDs for debugging
+      if (data && data.length > 0) {
+        console.log('📋 Tasks Query: Sample tasks:', data.slice(0, 3).map(t => ({ 
+          id: t.id.slice(-8), 
+          status: t.status, 
+          created: t.created_at 
+        })))
+      }
+      
       return data as Task[]
     },
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 30000, // Cache for 30 seconds
+    retry: (failureCount, error) => {
+      // Retry up to 2 times for non-auth errors
+      if (failureCount < 2 && !error.message?.includes('sign in')) {
+        return true
+      }
+      return false
+    }
   })
 
   // Create new task with enhanced debugging
@@ -44,19 +147,14 @@ export function useTasks() {
       manualAgentOverride?: string
     }) => {
       if (!user) {
-        console.error('Task creation failed: User not authenticated')
+        console.error('📝 Task Creation: User not authenticated')
         throw new Error('User not authenticated')
       }
 
-      console.log('Creating task:', {
-        user_id: user.id,
-        taskContent: taskData.taskContent.substring(0, 100) + '...',
-        priority: taskData.priority,
-        manualAgentOverride: taskData.manualAgentOverride
-      })
+      console.log('📝 Task Creation: Starting for user:', user.id)
 
       // Step 1: Get agent routing recommendation
-      console.log('Step 1: Getting agent routing...')
+      console.log('📝 Task Creation: Step 1 - Getting agent routing...')
       const { data: routingData, error: routingError } = await supabase.functions.invoke('task-router', {
         body: {
           taskContent: taskData.taskContent,
@@ -66,25 +164,22 @@ export function useTasks() {
       })
 
       if (routingError) {
-        console.error('Task routing failed:', routingError)
+        console.error('📝 Task Creation: Routing failed:', routingError)
         throw new Error(`Task routing failed: ${routingError.message}`)
       }
 
       if (!routingData?.data) {
-        console.error('No routing data received')
+        console.error('📝 Task Creation: No routing data received')
         throw new Error('No routing data received from task router')
       }
 
       const selectedAgent = routingData.data.selectedAgent
       const reasoning = routingData.data.reasoning
 
-      console.log('Agent routing successful:', {
-        selectedAgent,
-        reasoning: reasoning?.substring(0, 100) + '...'
-      })
+      console.log('📝 Task Creation: Routing successful, agent:', selectedAgent)
 
       // Step 2: Create task record via secure edge function
-      console.log('Step 2: Creating task record via submit-task edge function...')
+      console.log('📝 Task Creation: Step 2 - Creating task record...')
       const taskRecord = {
         user_id: user.id,
         task_content: taskData.taskContent,
@@ -95,28 +190,12 @@ export function useTasks() {
         estimated_cost: 0
       }
 
-      console.log('Submitting task via edge function:', {
-        ...taskRecord,
-        task_content: taskRecord.task_content.substring(0, 50) + '...',
-        agent_reasoning: taskRecord.agent_reasoning?.substring(0, 50) + '...'
-      })
-
       const { data: submitResult, error: taskError } = await supabase.functions.invoke('submit-task', {
         body: { task: taskRecord }
       })
 
       if (taskError) {
-        console.error('Task submission failed:', {
-          error: taskError,
-          errorMessage: taskError.message,
-          errorDetails: JSON.stringify(taskError, null, 2),
-          user_id: user.id,
-          auth_state: !!user,
-          taskRecord: {
-            ...taskRecord,
-            task_content: taskRecord.task_content.substring(0, 50) + '...'
-          }
-        })
+        console.error('📝 Task Creation: Submission failed:', taskError)
         
         // Provide user-friendly error messages based on error type
         let userMessage = 'Failed to submit task. Please try again.'
@@ -135,37 +214,29 @@ export function useTasks() {
       }
 
       if (!submitResult?.data) {
-        console.error('No task returned after submission')
+        console.error('📝 Task Creation: No task returned after submission')
         throw new Error('Task was not created successfully')
       }
 
       const insertedTask = submitResult.data
-
-      console.log('Task created successfully via edge function:', {
-        task_id: insertedTask.id,
-        status: insertedTask.status,
-        selected_agent: insertedTask.selected_agent
-      })
-
-      // Note: Task processing is now automatically triggered by the submit-task edge function
-      console.log('Task processing will be triggered automatically by submit-task function')
+      console.log('📝 Task Creation: Success! Task ID:', insertedTask.id)
 
       return { task: insertedTask, routing: routingData.data }
     },
     onSuccess: (data) => {
-      console.log('Task creation mutation successful:', data.task.id)
+      console.log('📝 Task Creation: Mutation successful, invalidating queries')
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       toast.success(`Task submitted successfully! (ID: ${data.task.id.slice(-8)})`)
     },
     onError: (error: any) => {
-      console.error('Task creation mutation failed:', error)
+      console.error('📝 Task Creation: Mutation failed:', error)
       toast.error(error.message || 'Failed to submit task')
     }
   })
 
-  // Get task result
+  // Get task result with enhanced debugging
   const getTaskResult = async (taskId: string): Promise<TaskResult | null> => {
-    console.log('Fetching task result for:', taskId)
+    console.log('📊 Task Result: Fetching for task:', taskId)
     
     const { data, error } = await supabase
       .from('task_results')
@@ -174,20 +245,44 @@ export function useTasks() {
       .maybeSingle()
     
     if (error) {
-      console.error('Error fetching task result:', error)
+      console.error('📊 Task Result: Error:', error)
       throw error
     }
     
-    console.log('Task result fetched:', data ? 'found' : 'not found')
+    console.log('📊 Task Result:', data ? 'Found' : 'Not found')
     return data
+  }
+
+  // Diagnostic function to check authentication and task access
+  const diagnoseTaskHistory = async () => {
+    console.log('🔧 Diagnostic: Starting task history diagnosis...')
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('fix-task-history')
+      
+      if (error) {
+        console.error('🔧 Diagnostic: Edge function error:', error)
+        return { success: false, error: error.message }
+      }
+      
+      console.log('🔧 Diagnostic: Results:', data)
+      return data
+    } catch (error) {
+      console.error('🔧 Diagnostic: Unexpected error:', error)
+      return { success: false, error: 'Diagnostic failed' }
+    }
   }
 
   return {
     tasks: tasksQuery.data || [],
     loading: tasksQuery.isLoading,
+    error: tasksQuery.error,
     createTask: createTaskMutation.mutate,
     isCreating: createTaskMutation.isPending,
-    getTaskResult
+    getTaskResult,
+    diagnoseTaskHistory,
+    authDebugInfo,
+    refetch: tasksQuery.refetch
   }
 }
 
@@ -195,7 +290,7 @@ export function useAgents() {
   const agentsQuery = useQuery({
     queryKey: ['agents'],
     queryFn: async () => {
-      console.log('Fetching agent capabilities...')
+      console.log('🤖 Agents Query: Fetching agent capabilities...')
       
       const { data, error } = await supabase
         .from('agent_capabilities')
@@ -204,11 +299,11 @@ export function useAgents() {
         .order('agent_name')
       
       if (error) {
-        console.error('Error fetching agents:', error)
+        console.error('🤖 Agents Query: Error:', error)
         throw error
       }
       
-      console.log('Agents fetched successfully:', data?.length || 0, 'agents')
+      console.log('🤖 Agents Query: Success! Found', data?.length || 0, 'agents')
       return data as AgentCapability[]
     }
   })
@@ -228,29 +323,26 @@ export function useTaskRouter() {
       manualAgentOverride?: string
       userPreferences?: any
     }) => {
-      console.log('Task routing request:', {
-        taskContent: data.taskContent.substring(0, 50) + '...',
-        manualAgentOverride: data.manualAgentOverride
-      })
+      console.log('🎯 Task Router: Starting routing...')
       
       const { data: routingData, error } = await supabase.functions.invoke('task-router', {
         body: data
       })
       
       if (error) {
-        console.error('Task routing error:', error)
+        console.error('🎯 Task Router: Error:', error)
         throw error
       }
       
-      console.log('Task routing successful:', routingData?.data?.selectedAgent)
+      console.log('🎯 Task Router: Success! Selected agent:', routingData?.data?.selectedAgent)
       return routingData.data
     },
     onSuccess: (data) => {
-      console.log('Task routing mutation successful')
+      console.log('🎯 Task Router: Mutation successful')
       setRouting(data)
     },
     onError: (error: any) => {
-      console.error('Task routing mutation failed:', error)
+      console.error('🎯 Task Router: Mutation failed:', error)
       toast.error(error.message || 'Failed to route task')
     }
   })
