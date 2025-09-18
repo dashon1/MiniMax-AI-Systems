@@ -1,0 +1,685 @@
+{
+  "name": "AEROS Orchestra Multi-Agent System - Production Ready",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "orchestra-webhook",
+        "responseMode": "responseNode",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Voice Input Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "orchestra-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Voice input preprocessing and validation\nconst inputData = $input.item.json;\n\n// Extract and validate voice transcript\nconst transcript = inputData.transcript || inputData.text || inputData.message || '';\nconst audioUrl = inputData.audioUrl || inputData.audio_url || '';\nconst userId = inputData.userId || inputData.user_id || 'anonymous';\nconst sessionId = inputData.sessionId || inputData.session_id || `session_${Date.now()}`;\nconst priority = inputData.priority || 'medium';\n\nif (!transcript && !audioUrl) {\n  throw new Error('No transcript or audio URL provided. Please provide either text or audio data.');\n}\n\n// Initialize session tracking\nconst sessionData = {\n  sessionId,\n  userId,\n  transcript: transcript.trim(),\n  audioUrl,\n  priority,\n  timestamp: new Date().toISOString(),\n  status: 'processing',\n  requestSource: 'voice_input'\n};\n\n// Log for debugging\nconsole.log('Voice input processed:', sessionData);\n\nreturn sessionData;"
+      },
+      "id": "a0b1c2d3-e4f5-6789-abcd-ef0123456789",
+      "name": "Preprocess Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the AEROS Orchestrator Agent, the central brain of a sophisticated multi-agent system. Your role is to analyze user requests and create optimal execution plans.\n\nAVAILABLE AGENTS:\n\n1. **ABACUS Agent** (Data Analytics Specialist)\n   - Statistical analysis and data processing\n   - Predictive modeling and forecasting\n   - Business intelligence and reporting\n   - Mathematical computations\n   - Data visualization\n\n2. **GENSPARK Agent** (Creative Content Generator)\n   - Text generation and content creation\n   - Creative writing and marketing copy\n   - Research and summarization\n   - Question answering\n   - General conversational AI\n\n3. **MINIMAX Agent** (AI Optimization Specialist)\n   - Advanced AI model operations\n   - Video and audio generation\n   - Complex reasoning tasks\n   - Multi-modal AI processing\n   - Optimization problems\n\n4. **MANUS Agent** (Automation Specialist)\n   - Web scraping and data extraction\n   - Process automation\n   - API integrations\n   - File processing\n   - System operations\n\n5. **MVP Agent** (Business Strategy Specialist)\n   - Market research and analysis\n   - Business plan development\n   - Competitive analysis\n   - Strategic planning\n   - Investor relations\n\nRISK ASSESSMENT CRITERIA:\n- HIGH: Financial transactions, external communications, file system modifications, complex automation\n- MEDIUM: Data analysis with personal info, content creation for public use, API integrations\n- LOW: Research, simple content generation, basic analysis, information retrieval\n\nRETURN FORMAT (JSON only):\n{\n  \"user_intent\": \"Brief description of what user wants\",\n  \"complexity_score\": 1-10,\n  \"risk_level\": \"low/medium/high\",\n  \"requires_approval\": true/false,\n  \"estimated_duration\": \"time estimate\",\n  \"tasks\": [\n    {\n      \"id\": \"task_1\",\n      \"agent\": \"AGENT_NAME\",\n      \"description\": \"What this agent should do\",\n      \"priority\": \"high/medium/low\",\n      \"depends_on\": [],\n      \"timeout_seconds\": 300,\n      \"retry_count\": 3\n    }\n  ],\n  \"coordination_notes\": \"How agents should collaborate\"\n}"
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.transcript }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 2000,
+          "timeout": 30000
+        }
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f23456789012",
+      "name": "Orchestrator Brain",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse and validate orchestrator response\nconst aiResponse = $input.item.json;\nlet planData;\n\ntry {\n  // Extract JSON from AI response\n  const responseText = aiResponse.choices?.[0]?.message?.content || aiResponse.text || JSON.stringify(aiResponse);\n  \n  // Try to parse JSON\n  if (responseText.includes('{')) {\n    const jsonStart = responseText.indexOf('{');\n    const jsonEnd = responseText.lastIndexOf('}') + 1;\n    const jsonString = responseText.substring(jsonStart, jsonEnd);\n    planData = JSON.parse(jsonString);\n  } else {\n    throw new Error('No JSON found in response');\n  }\n  \n  // Validate required fields\n  if (!planData.user_intent || !planData.tasks || !Array.isArray(planData.tasks)) {\n    throw new Error('Invalid plan structure');\n  }\n  \n  // Validate agent names\n  const validAgents = ['ABACUS', 'GENSPARK', 'MINIMAX', 'MANUS', 'MVP'];\n  planData.tasks.forEach(task => {\n    if (!validAgents.includes(task.agent)) {\n      console.warn(`Unknown agent: ${task.agent}, defaulting to GENSPARK`);\n      task.agent = 'GENSPARK';\n    }\n  });\n  \n  // Add metadata\n  planData.session_id = $('Preprocess Input').item.json.sessionId;\n  planData.created_at = new Date().toISOString();\n  planData.status = 'validated';\n  \n  return planData;\n  \n} catch (error) {\n  console.error('Plan parsing error:', error.message);\n  \n  // Fallback plan for parsing errors\n  return {\n    user_intent: 'System error - using fallback plan',\n    complexity_score: 1,\n    risk_level: 'low',\n    requires_approval: false,\n    estimated_duration: '30 seconds',\n    tasks: [{\n      id: 'fallback_task',\n      agent: 'GENSPARK',\n      description: 'Generate a helpful response for the user query',\n      priority: 'high',\n      depends_on: [],\n      timeout_seconds: 30,\n      retry_count: 1\n    }],\n    coordination_notes: 'Fallback mode due to parsing error',\n    session_id: $('Preprocess Input').item.json.sessionId,\n    created_at: new Date().toISOString(),\n    status: 'fallback',\n    error: error.message\n  };\n}"
+      },
+      "id": "b1c2d3e4-f5a6-7890-bcde-f12345678901",
+      "name": "Parse Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.requires_approval }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-345678901234",
+      "name": "Check Approval Required",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "message": "=🚨 **AEROS APPROVAL REQUIRED** 🚨\n\n**Task:** {{ $json.user_intent }}\n\n**Risk Level:** {{ $json.risk_level.toUpperCase() }}\n**Complexity:** {{ $json.complexity_score }}/10\n**Estimated Duration:** {{ $json.estimated_duration }}\n\n**Planned Actions:**\n{{ $json.tasks.map(t => `• ${t.agent}: ${t.description}`).join('\\n') }}\n\n**Coordination Notes:** {{ $json.coordination_notes }}\n\n⚠️ Do you approve this execution plan?",
+        "buttons": [
+          {
+            "label": "✅ Approve",
+            "value": "approve"
+          },
+          {
+            "label": "❌ Deny",
+            "value": "deny"
+          },
+          {
+            "label": "📝 Modify",
+            "value": "modify"
+          }
+        ],
+        "buttonTimeout": 300
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-456789012345",
+      "name": "Human Approval Gate",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.response }}",
+              "operation": "equals",
+              "value2": "approve"
+            }
+          ]
+        }
+      },
+      "id": "d5e6f7a8-b9c0-1234-efab-567890123456",
+      "name": "Check Approval Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Initialize execution session\nconst plan = $('Parse Plan').item.json;\nconst sessionId = plan.session_id;\n\n// Create execution context\nconst executionContext = {\n  session_id: sessionId,\n  user_intent: plan.user_intent,\n  total_tasks: plan.tasks.length,\n  completed_tasks: [],\n  failed_tasks: [],\n  agent_results: {},\n  status: 'executing',\n  started_at: new Date().toISOString()\n};\n\n// Return all tasks with execution context\nconst tasksWithContext = plan.tasks.map((task, index) => ({\n  ...task,\n  index,\n  status: 'pending',\n  attempt: 0,\n  max_retries: task.retry_count || 3,\n  execution_context: executionContext\n}));\n\nreturn tasksWithContext;"
+      },
+      "id": "e5f6a7b8-c9d0-1234-efab-567890123456",
+      "name": "Initialize Execution",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "ABACUS"
+                  }
+                ]
+              },
+              "outputKey": "abacus"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "GENSPARK"
+                  }
+                ]
+              },
+              "outputKey": "genspark"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "MINIMAX"
+                  }
+                ]
+              },
+              "outputKey": "minimax"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "MANUS"
+                  }
+                ]
+              },
+              "outputKey": "manus"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.agent }}",
+                    "operation": "equals",
+                    "value2": "MVP"
+                  }
+                ]
+              },
+              "outputKey": "mvp"
+            }
+          ]
+        },
+        "fallbackOutput": "genspark"
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-789012345678",
+      "name": "Route to Agent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the ABACUS Agent, a data analytics specialist. Analyze the given task and provide analytical insights, statistical analysis, or data-driven solutions.\n\nCapabilities:\n- Statistical analysis and data processing\n- Predictive modeling and forecasting\n- Business intelligence and reporting\n- Mathematical computations\n- Data visualization recommendations\n\nReturn results in JSON format with structured analysis."
+            },
+            {
+              "role": "user",
+              "content": "=Task: {{ $json.description }}\n\nSession ID: {{ $json.execution_context.session_id }}\nUser Intent: {{ $json.execution_context.user_intent }}\n\nPlease analyze this task and provide data-driven insights or solutions."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 2000,
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}"
+        }
+      },
+      "id": "b8c9d0e1-f2a3-4567-bcde-890123456789",
+      "name": "ABACUS Agent Execute",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1650, 200]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the GENSPARK Agent, a creative content generator and general-purpose AI assistant. Handle a wide variety of tasks including content creation, research, writing, and general problem-solving.\n\nCapabilities:\n- Text generation and content creation\n- Creative writing and marketing copy\n- Research and summarization\n- Question answering\n- General conversational AI\n- Information synthesis\n\nReturn results in JSON format with clear, actionable content."
+            },
+            {
+              "role": "user",
+              "content": "=Task: {{ $json.description }}\n\nSession ID: {{ $json.execution_context.session_id }}\nUser Intent: {{ $json.execution_context.user_intent }}\n\nPlease complete this task with creativity and thoroughness."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 2000,
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}"
+        }
+      },
+      "id": "c9d0e1f2-a3b4-5678-cdef-901234567890",
+      "name": "GENSPARK Agent Execute",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the MINIMAX Agent, an AI optimization specialist capable of advanced reasoning and multi-modal processing. Handle complex AI tasks, optimization problems, and sophisticated analysis.\n\nCapabilities:\n- Advanced AI model operations\n- Complex reasoning and problem-solving\n- Multi-modal AI processing concepts\n- Optimization strategies\n- Technical AI implementations\n\nReturn results in JSON format with detailed technical insights."
+            },
+            {
+              "role": "user",
+              "content": "=Task: {{ $json.description }}\n\nSession ID: {{ $json.execution_context.session_id }}\nUser Intent: {{ $json.execution_context.user_intent }}\n\nPlease apply advanced AI techniques to solve this task optimally."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 2000,
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}"
+        }
+      },
+      "id": "d0e1f2a3-b4c5-6789-defa-012345678901",
+      "name": "MINIMAX Agent Execute",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1650, 400]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the MANUS Agent, an automation specialist. Handle tasks related to process automation, data extraction, API integrations, and system operations.\n\nCapabilities:\n- Process automation strategies\n- Data extraction and processing\n- API integration planning\n- File processing workflows\n- System operation optimization\n\nReturn results in JSON format with actionable automation solutions."
+            },
+            {
+              "role": "user",
+              "content": "=Task: {{ $json.description }}\n\nSession ID: {{ $json.execution_context.session_id }}\nUser Intent: {{ $json.execution_context.user_intent }}\n\nPlease provide automation solutions and process optimization strategies."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.4,
+          "maxTokens": 2000,
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}"
+        }
+      },
+      "id": "e1f2a3b4-c5d6-7890-efab-123456789012",
+      "name": "MANUS Agent Execute",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1650, 500]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "message",
+        "modelId": "gpt-4",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are the MVP Agent, a business strategy specialist. Focus on startup strategy, market analysis, business development, and strategic planning.\n\nCapabilities:\n- Market research and analysis\n- Business plan development\n- Competitive analysis\n- Strategic planning\n- MVP development strategies\n- Investor relations guidance\n\nReturn results in JSON format with strategic business insights."
+            },
+            {
+              "role": "user",
+              "content": "=Task: {{ $json.description }}\n\nSession ID: {{ $json.execution_context.session_id }}\nUser Intent: {{ $json.execution_context.user_intent }}\n\nPlease provide strategic business analysis and recommendations."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.5,
+          "maxTokens": 2000,
+          "timeout": "={{ ($json.timeout_seconds || 300) * 1000 }}"
+        }
+      },
+      "id": "e2f3a4b5-c6d7-8901-efab-234567890123",
+      "name": "MVP Agent Execute",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1650, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process agent results and combine all task outputs\nconst agentResult = $input.item.json;\nconst taskData = $('Route to Agent').item.json;\n\n// Process AI response\nlet processedResult;\ntry {\n  if (agentResult.choices && agentResult.choices[0]) {\n    // OpenAI format\n    const content = agentResult.choices[0].message.content;\n    \n    // Try to parse as JSON, fallback to text\n    try {\n      processedResult = JSON.parse(content);\n    } catch {\n      processedResult = { content: content, format: 'text' };\n    }\n  } else {\n    processedResult = agentResult;\n  }\n  \n  const result = {\n    agent: taskData.agent,\n    task_id: taskData.id,\n    task_description: taskData.description,\n    status: 'completed',\n    output: processedResult,\n    completed_at: new Date().toISOString(),\n    execution_time: (Date.now() - new Date(taskData.execution_context.started_at).getTime()) / 1000\n  };\n  \n  console.log(`${taskData.agent} agent completed:`, result);\n  return result;\n  \n} catch (error) {\n  console.error(`${taskData.agent} agent error:`, error.message);\n  return {\n    agent: taskData.agent,\n    task_id: taskData.id,\n    task_description: taskData.description,\n    status: 'error',\n    error: error.message,\n    completed_at: new Date().toISOString()\n  };\n}"
+      },
+      "id": "f2a3b4c5-d6e7-8901-fabc-234567890123",
+      "name": "Process Agent Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all agent results into final response\nconst allResults = $input.all();\nconst sessionData = $('Preprocess Input').item.json;\nconst planData = $('Parse Plan').item.json;\n\n// Organize results by agent\nconst agentResults = {};\nconst completedTasks = [];\nconst failedTasks = [];\n\nallResults.forEach(result => {\n  const data = result.json;\n  agentResults[data.agent] = data.output;\n  \n  if (data.status === 'completed') {\n    completedTasks.push(data.task_id);\n  } else {\n    failedTasks.push(data.task_id);\n  }\n});\n\n// Calculate statistics\nconst totalTasks = planData.tasks.length;\nconst successRate = Math.round((completedTasks.length / totalTasks) * 100);\nconst executionTime = Math.max(...allResults.map(r => r.json.execution_time || 0));\n\n// Create comprehensive response\nconst finalResponse = {\n  session_id: sessionData.sessionId,\n  user_intent: planData.user_intent,\n  request_timestamp: sessionData.timestamp,\n  \n  execution_summary: {\n    status: failedTasks.length === 0 ? 'success' : 'partial_success',\n    total_tasks: totalTasks,\n    completed_tasks: completedTasks.length,\n    failed_tasks: failedTasks.length,\n    success_rate: successRate,\n    execution_time_seconds: Math.round(executionTime)\n  },\n  \n  agent_results: agentResults,\n  \n  task_details: planData.tasks.map(task => {\n    const result = allResults.find(r => r.json.task_id === task.id);\n    return {\n      id: task.id,\n      agent: task.agent,\n      description: task.description,\n      priority: task.priority,\n      status: result ? result.json.status : 'not_executed',\n      result: result ? result.json.output : null\n    };\n  }),\n  \n  coordination_notes: planData.coordination_notes,\n  completed_at: new Date().toISOString(),\n  \n  // User-friendly summary\n  summary: failedTasks.length === 0 \n    ? `Successfully completed all ${totalTasks} tasks in ${Math.round(executionTime)} seconds.`\n    : `Completed ${completedTasks.length}/${totalTasks} tasks. ${failedTasks.length} tasks failed.`,\n  \n  // Recommendations based on results\n  recommendations: failedTasks.length === 0 ? [\n    'All tasks completed successfully',\n    'Results are ready for use',\n    'System ready for next request'\n  ] : [\n    'Review failed tasks for potential issues',\n    'Consider retrying failed operations',\n    'Check task complexity and timeout settings'\n  ]\n};\n\nconsole.log('Final orchestration result:', finalResponse);\nreturn finalResponse;"
+      },
+      "id": "d6e7f8a9-b0c1-2345-defa-678901234567",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2050, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Session-ID",
+              "value": "={{ $json.session_id }}"
+            },
+            {
+              "name": "X-Success-Rate",
+              "value": "={{ $json.execution_summary.success_rate }}%"
+            },
+            {
+              "name": "X-Execution-Time",
+              "value": "={{ $json.execution_summary.execution_time_seconds }}s"
+            }
+          ]
+        }
+      },
+      "id": "e7f8a9b0-c1d2-3456-efab-789012345678",
+      "name": "Send Final Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2250, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"error\": \"Execution denied by user\",\n  \"user_response\": \"{{ $json.response }}\",\n  \"original_plan\": {{ JSON.stringify($('Parse Plan').item.json) }},\n  \"message\": \"Task execution was not approved and has been cancelled.\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "responseCode": 403,
+        "responseHeaders": {
+          "entries": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "e8f9a0b1-c2d3-4567-efab-890123456789",
+      "name": "Send Denial Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 200]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "f0a1b2c3-d4e5-6789-abcd-012345678901",
+      "name": "Inter-Agent Coordination Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1850, 500]
+    }
+  ],
+  "connections": {
+    "Voice Input Webhook": {
+      "main": [
+        [
+          {
+            "node": "Preprocess Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preprocess Input": {
+      "main": [
+        [
+          {
+            "node": "Orchestrator Brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orchestrator Brain": {
+      "main": [
+        [
+          {
+            "node": "Parse Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Plan": {
+      "main": [
+        [
+          {
+            "node": "Check Approval Required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval Required": {
+      "main": [
+        [
+          {
+            "node": "Human Approval Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Initialize Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Approval Gate": {
+      "main": [
+        [
+          {
+            "node": "Check Approval Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval Response": {
+      "main": [
+        [
+          {
+            "node": "Initialize Execution",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Denial Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Execution": {
+      "main": [
+        [
+          {
+            "node": "Route to Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route to Agent": {
+      "main": [
+        [
+          {
+            "node": "ABACUS Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GENSPARK Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MINIMAX Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MANUS Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MVP Agent Execute",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ABACUS Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GENSPARK Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MINIMAX Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MANUS Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MVP Agent Execute": {
+      "main": [
+        [
+          {
+            "node": "Process Agent Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Agent Result": {
+      "main": [
+        [
+          {
+            "node": "Inter-Agent Coordination Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inter-Agent Coordination Wait": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Results": {
+      "main": [
+        [
+          {
+            "node": "Send Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "versionId": "01234567-89ab-cdef-0123-456789abcdef",
+  "meta": {
+    "instanceId": "8c8c5237b8e37b006a7adce87f4369350c58e41f3ca9de16196d3197f69eabcd"
+  },
+  "id": "ENI6HpIGqFBLhOip",
+  "tags": ["multi-agent", "ai-orchestration", "aeros", "voice-assistant", "production-ready"]
+}
