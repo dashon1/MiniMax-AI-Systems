@@ -338,7 +338,6 @@ function DebugInfo({ user, tasks, loading, error }: { user: any, tasks: any[], l
 
 function DiagnosticPanel() {
   const { user } = useAuth()
-  const { diagnoseTaskHistory, authDebugInfo } = useTasks()
   const [diagnostic, setDiagnostic] = useState<any>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [manualQueryResult, setManualQueryResult] = useState<any>(null)
@@ -350,7 +349,7 @@ function DiagnosticPanel() {
     }
 
     try {
-      console.log('🔧 Manual Query: Testing direct database access for user:', user.id)
+      console.log('Manual Query: Testing direct database access for user:', user.id)
       
       // Test 1: Direct task query
       const { data: directTasks, error: directError } = await supabase
@@ -403,7 +402,7 @@ function DiagnosticPanel() {
         }
       }
       
-      console.log('🔧 Manual Query Results:', result)
+      console.log('Manual Query Results:', result)
       setManualQueryResult(result)
       
       if (directError) {
@@ -413,7 +412,7 @@ function DiagnosticPanel() {
       }
       
     } catch (error: any) {
-      console.error('🔧 Manual Query: Failed:', error)
+      console.error('Manual Query: Failed:', error)
       toast.error(`Manual query error: ${error.message}`)
     }
   }
@@ -421,14 +420,9 @@ function DiagnosticPanel() {
   const runDiagnostic = async () => {
     setIsRunning(true)
     try {
-      const result = await diagnoseTaskHistory()
-      setDiagnostic(result)
-      
-      if (result.success) {
-        toast.success('Diagnostic completed successfully')
-      } else {
-        toast.error('Diagnostic found issues')
-      }
+      // Simple diagnostic - just test direct query
+      await runManualQuery()
+      toast.success('Diagnostic completed')
     } catch (error) {
       console.error('Diagnostic failed:', error)
       toast.error('Diagnostic failed to run')
@@ -482,13 +476,13 @@ function DiagnosticPanel() {
           </Button>
         </div>
 
-        {authDebugInfo && (
+        {user && (
           <div className="text-xs space-y-1">
             <div className="font-medium">Local Auth Status:</div>
             <div className="pl-2 text-muted-foreground">
-              Status: {authDebugInfo.status}<br />
-              {authDebugInfo.user_id && `User ID: ${authDebugInfo.user_id.slice(-8)}`}<br />
-              Last Check: {new Date(authDebugInfo.timestamp).toLocaleTimeString()}
+              Status: authenticated<br />
+              User ID: {user.id.slice(-8)}<br />
+              Last Check: {new Date().toLocaleTimeString()}
             </div>
           </div>
         )}
@@ -566,16 +560,16 @@ function DiagnosticPanel() {
 }
 
 export default function TaskHistory() {
-  const { tasks, loading, error, refetch } = useTasks()
+  const { tasks, loading } = useTasks()
   const { user } = useAuth()
   const [showDiagnostic, setShowDiagnostic] = useState(false)
 
   // Show diagnostic panel if no tasks are found and user is authenticated
   useEffect(() => {
-    if (user && !loading && tasks.length === 0 && !error) {
+    if (user && !loading && tasks.length === 0) {
       setShowDiagnostic(true)
     }
-  }, [user, loading, tasks.length, error])
+  }, [user, loading, tasks.length])
 
   if (loading) {
     return (
@@ -586,28 +580,6 @@ export default function TaskHistory() {
       >
         <AILoadingSpinner size="lg" />
         <p className="text-sm text-muted-foreground">Loading your task history...</p>
-      </motion.div>
-    )
-  }
-
-  if (error) {
-    return (
-      <motion.div 
-        className="flex flex-col items-center justify-center p-12 space-y-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <AlertTriangle className="h-12 w-12 text-red-500" />
-        <div className="text-center space-y-2">
-          <p className="text-lg font-medium">Failed to load task history</p>
-          <p className="text-sm text-muted-foreground">
-            {error.message || 'An unexpected error occurred'}
-          </p>
-          <Button onClick={() => refetch()} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Try Again
-          </Button>
-        </div>
       </motion.div>
     )
   }
@@ -648,11 +620,6 @@ export default function TaskHistory() {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button onClick={() => refetch()} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          
           <Button 
             onClick={() => setShowDiagnostic(!showDiagnostic)} 
             variant="outline" 
@@ -664,7 +631,7 @@ export default function TaskHistory() {
         </div>
       </motion.div>
 
-      <DebugInfo user={user} tasks={tasks} loading={loading} error={error} />
+      <DebugInfo user={user} tasks={tasks} loading={loading} error={null} />
 
       {showDiagnostic && <DiagnosticPanel />}
 
