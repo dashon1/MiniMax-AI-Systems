@@ -3,38 +3,38 @@
     "Coordinator": {
       "1": {
         "id": "1",
-        "content": "Research n8n workflow templates for multi-agent systems",
-        "details": "1. Analyze n8n.io workflows for multi-agent systems\n2. Review multimodal AI workflows\n3. Examine business automation templates\n4. Find workflows that match our 5-agent architecture\n5. Identify best template to adapt",
-        "status": "completed",
+        "content": "Comprehensive Task History Bug Investigation",
+        "details": "Since previous authentication/RLS fixes haven't resolved the issue, conduct a thorough investigation covering: 1. Frontend code inspection (useTasks.ts, TaskHistory.tsx) 2. Backend data verification (Supabase tables, RLS policies) 3. Network/API debugging (console logs, network requests) 4. Alternative debugging approaches (different user sessions, browser dev tools) 5. Cross-reference with working features to identify differences",
+        "status": "pending",
         "priority": "high"
       },
       "2": {
         "id": "2",
-        "content": "Design comprehensive n8n workflow for AEROS Orchestra system",
-        "details": "1. Map voice-to-task pipeline\n2. Create agent selection logic\n3. Design task orchestration flow\n4. Implement safety/approval mechanisms\n5. Add inter-agent communication\n6. Include fallback loops and error handling\n7. Add wait times and timeouts",
-        "status": "completed",
+        "content": "Frontend Deep Dive Analysis",
+        "details": "Examine the complete frontend data flow: 1. Check useTasks.ts hook implementation 2. Verify TaskHistory.tsx component logic 3. Inspect React state management 4. Check for console errors and warnings 5. Analyze component mounting and data loading sequence",
+        "status": "pending",
         "priority": "high"
       },
       "3": {
         "id": "3",
-        "content": "Create detailed workflow documentation",
-        "details": "1. Document each workflow node and purpose\n2. Include detailed prompts for AI agents\n3. Specify fallback strategies\n4. Define wait times and timeout settings\n5. Create setup and configuration guide",
-        "status": "completed",
-        "priority": "medium"
+        "content": "Backend & Database Verification",
+        "details": "Thoroughly verify backend functionality: 1. Check Supabase tables for actual data 2. Test RLS policies manually 3. Verify edge functions are working 4. Test API endpoints directly 5. Check user authentication status",
+        "status": "pending",
+        "priority": "high"
       },
       "4": {
         "id": "4",
-        "content": "Generate n8n workflow JSON file",
-        "details": "1. Create importable n8n workflow file\n2. Configure all nodes and connections\n3. Set up triggers and conditions\n4. Include environment variables and secrets\n5. Test workflow structure",
-        "status": "completed",
-        "priority": "medium"
+        "content": "Live Debugging & Testing",
+        "details": "Perform live debugging on the deployed app: 1. Check browser console for errors 2. Monitor network requests 3. Test with different user accounts 4. Verify authentication flow 5. Test data fetching in real-time",
+        "status": "pending",
+        "priority": "high"
       },
       "5": {
         "id": "5",
-        "content": "Fix and enhance n8n workflow to make everything properly connected and functional",
-        "details": "1. ✅ Fixed API endpoints that were placeholder/incorrect\n2. ✅ Corrected authentication and credential references\n3. ✅ Fixed GENSPARK agent implementation (no more redirects to MANUS)\n4. ✅ Improved task iteration and dependency logic\n5. ✅ Added proper error handling throughout workflow\n6. ✅ Updated agent routing to use correct endpoints\n7. ✅ Fixed any broken connections between nodes\n8. ✅ Validated JSON structure and n8n compatibility\n9. ✅ Created comprehensive documentation and setup guide",
-        "status": "completed",
-        "priority": "high"
+        "content": "Alternative Solutions Implementation",
+        "details": "If root cause is identified, implement alternative solutions: 1. Rebuild data fetching logic if needed 2. Implement fallback data loading methods 3. Add comprehensive error handling 4. Create debugging utilities for future issues",
+        "status": "pending",
+        "priority": "medium"
       }
     }
   }
