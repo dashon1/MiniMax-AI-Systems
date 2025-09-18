@@ -9,8 +9,10 @@ export function useTasks() {
   const queryClient = useQueryClient()
   const [authDebugInfo, setAuthDebugInfo] = useState<any>(null)
 
-  // Enhanced authentication debugging
+  // Enhanced authentication debugging with detailed lifecycle tracking
   useEffect(() => {
+    console.log('🔍 useTasks: useEffect triggered, user:', user?.id?.slice(-8) || 'none')
+    
     const checkAuth = async () => {
       if (!user) {
         console.log('🔍 Auth Debug: No user in context')
@@ -54,89 +56,72 @@ export function useTasks() {
     checkAuth()
   }, [user])
 
-  // Fetch user's tasks with enhanced debugging
+  // Log when query is enabled/disabled
+  useEffect(() => {
+    console.log('📋 useTasks: Query enabled status changed:', !!user?.id, 'for user:', user?.id?.slice(-8) || 'none')
+  }, [user?.id])
+
+  // Fetch user's tasks with simplified and more reliable approach
   const tasksQuery = useQuery({
     queryKey: ['tasks', user?.id],
     queryFn: async () => {
-      if (!user) {
-        console.log('📋 Tasks Query: No user found')
+      if (!user?.id) {
+        console.log('📋 Tasks Query: No user ID found')
         return []
       }
       
       console.log('📋 Tasks Query: Starting for user:', user.id)
       
-      // First, verify current session
-      const { data: session } = await supabase.auth.getSession()
-      if (!session?.session) {
-        console.error('📋 Tasks Query: No active session during query')
-        throw new Error('No active session. Please sign in again.')
-      }
-
-      console.log('📋 Tasks Query: Session verified, querying tasks...')
-      
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-      
-      if (error) {
-        console.error('📋 Tasks Query: Database error:', error)
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
         
-        // If it's an auth error, try to refresh the session
-        if (error.message?.includes('JWT') || error.message?.includes('expired')) {
-          console.log('📋 Tasks Query: Attempting session refresh...')
-          
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-          
-          if (refreshError) {
-            console.error('📋 Tasks Query: Session refresh failed:', refreshError)
-            throw new Error('Session expired. Please sign in again.')
-          }
-          
-          console.log('📋 Tasks Query: Session refreshed, retrying query...')
-          
-          // Retry the query with refreshed session
-          const { data: retryData, error: retryError } = await supabase
-            .from('tasks')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-          
-          if (retryError) {
-            console.error('📋 Tasks Query: Retry failed:', retryError)
-            throw retryError
-          }
-          
-          console.log('📋 Tasks Query: Retry successful, found', retryData?.length || 0, 'tasks')
-          return retryData as Task[]
+        if (error) {
+          console.error('📋 Tasks Query: Database error:', error)
+          console.error('📋 Tasks Query: Error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          })
+          throw error
         }
         
+        console.log('📋 Tasks Query: Success! Found', data?.length || 0, 'tasks')
+        
+        // Log detailed info for debugging
+        if (data && data.length > 0) {
+          console.log('📋 Tasks Query: Sample tasks:', data.slice(0, 3).map(t => ({ 
+            id: t.id.slice(-8), 
+            status: t.status, 
+            user_id: t.user_id?.slice(-8),
+            created: t.created_at 
+          })))
+        } else {
+          console.log('📋 Tasks Query: No tasks found for user:', user.id.slice(-8))
+        }
+        
+        return data as Task[]
+      } catch (error: any) {
+        console.error('📋 Tasks Query: Unexpected error:', error)
         throw error
       }
-      
-      console.log('📋 Tasks Query: Success! Found', data?.length || 0, 'tasks')
-      
-      // Log first few task IDs for debugging
-      if (data && data.length > 0) {
-        console.log('📋 Tasks Query: Sample tasks:', data.slice(0, 3).map(t => ({ 
-          id: t.id.slice(-8), 
-          status: t.status, 
-          created: t.created_at 
-        })))
-      }
-      
-      return data as Task[]
     },
-    enabled: !!user,
-    staleTime: 30000, // Cache for 30 seconds
-    retry: (failureCount, error) => {
-      // Retry up to 2 times for non-auth errors
-      if (failureCount < 2 && !error.message?.includes('sign in')) {
+    enabled: !!user?.id,
+    staleTime: 10000, // Reduce cache time for debugging
+    gcTime: 30000,
+    retry: (failureCount, error: any) => {
+      console.log(`📋 Tasks Query: Retry attempt ${failureCount}, error:`, error.message)
+      // Only retry for network errors, not auth or permission errors
+      if (failureCount < 2 && !error.message?.toLowerCase().includes('auth') && !error.message?.toLowerCase().includes('permission')) {
         return true
       }
       return false
-    }
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
   })
 
   // Create new task with enhanced debugging

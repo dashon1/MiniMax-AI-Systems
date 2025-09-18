@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTasks } from '@/hooks/useTasks'
-import { Task, TaskResult } from '@/lib/supabase'
+import { Task, TaskResult, supabase } from '@/lib/supabase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -278,11 +278,145 @@ function TaskCard({ task }: { task: Task }) {
   )
 }
 
+function DebugInfo({ user, tasks, loading, error }: { user: any, tasks: any[], loading: boolean, error: any }) {
+  const [showDebug, setShowDebug] = useState(false)
+  
+  return (
+    <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20 mb-4">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Info className="h-4 w-4 text-blue-600" />
+          Frontend Debug Info
+          <Button 
+            onClick={() => setShowDebug(!showDebug)} 
+            variant="outline" 
+            size="sm"
+            className="ml-auto"
+          >
+            {showDebug ? 'Hide' : 'Show'}
+          </Button>
+        </CardTitle>
+      </CardHeader>
+      {showDebug && (
+        <CardContent className="space-y-2 text-xs">
+          <div>
+            <strong>User State:</strong>
+            <pre className="bg-background/50 p-2 rounded mt-1 overflow-x-auto">
+              {JSON.stringify({
+                exists: !!user,
+                id: user?.id?.slice(-8) || 'none',
+                email: user?.email || 'none'
+              }, null, 2)}
+            </pre>
+          </div>
+          <div>
+            <strong>Query State:</strong>
+            <pre className="bg-background/50 p-2 rounded mt-1 overflow-x-auto">
+              {JSON.stringify({
+                loading,
+                error: error?.message || 'none',
+                taskCount: tasks?.length || 0
+              }, null, 2)}
+            </pre>
+          </div>
+          <div>
+            <strong>Tasks Data:</strong>
+            <pre className="bg-background/50 p-2 rounded mt-1 overflow-x-auto max-h-32">
+              {JSON.stringify(tasks?.slice(0, 2).map(t => ({
+                id: t?.id?.slice(-8),
+                status: t?.status,
+                user_id: t?.user_id?.slice(-8),
+                created: t?.created_at
+              })), null, 2)}
+            </pre>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  )
+}
+
 function DiagnosticPanel() {
   const { user } = useAuth()
   const { diagnoseTaskHistory, authDebugInfo } = useTasks()
   const [diagnostic, setDiagnostic] = useState<any>(null)
   const [isRunning, setIsRunning] = useState(false)
+  const [manualQueryResult, setManualQueryResult] = useState<any>(null)
+
+  const runManualQuery = async () => {
+    if (!user?.id) {
+      toast.error('No user found for manual query')
+      return
+    }
+
+    try {
+      console.log('🔧 Manual Query: Testing direct database access for user:', user.id)
+      
+      // Test 1: Direct task query
+      const { data: directTasks, error: directError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+      
+      // Test 2: Count query
+      const { count: taskCount, error: countError } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      
+      // Test 3: General task query (no user filter)
+      const { data: allTasks, error: allError } = await supabase
+        .from('tasks')
+        .select('id, user_id, status, created_at')
+        .limit(5)
+      
+      const result = {
+        timestamp: new Date().toISOString(),
+        userId: user.id,
+        directQuery: {
+          success: !directError,
+          error: directError?.message || null,
+          count: directTasks?.length || 0,
+          sampleTasks: directTasks?.slice(0, 2).map(t => ({
+            id: t.id.slice(-8),
+            user_id: t.user_id.slice(-8),
+            status: t.status,
+            created: t.created_at
+          })) || []
+        },
+        countQuery: {
+          success: !countError,
+          error: countError?.message || null,
+          count: taskCount || 0
+        },
+        allTasksQuery: {
+          success: !allError,
+          error: allError?.message || null,
+          count: allTasks?.length || 0,
+          sampleTasks: allTasks?.slice(0, 2).map(t => ({
+            id: t.id.slice(-8),
+            user_id: t.user_id.slice(-8),
+            status: t.status,
+            created: t.created_at
+          })) || []
+        }
+      }
+      
+      console.log('🔧 Manual Query Results:', result)
+      setManualQueryResult(result)
+      
+      if (directError) {
+        toast.error(`Direct query failed: ${directError.message}`)
+      } else {
+        toast.success(`Manual query found ${directTasks?.length || 0} tasks`)
+      }
+      
+    } catch (error: any) {
+      console.error('🔧 Manual Query: Failed:', error)
+      toast.error(`Manual query error: ${error.message}`)
+    }
+  }
 
   const runDiagnostic = async () => {
     setIsRunning(true)
@@ -335,6 +469,17 @@ function DiagnosticPanel() {
               </>
             )}
           </Button>
+          
+          <Button 
+            onClick={runManualQuery} 
+            disabled={!user}
+            size="sm"
+            variant="outline"
+            className="text-xs"
+          >
+            <Activity className="h-3 w-3 mr-1" />
+            Manual Query
+          </Button>
         </div>
 
         {authDebugInfo && (
@@ -370,6 +515,49 @@ function DiagnosticPanel() {
                 ✗ Error: {diagnostic.error}
               </div>
             )}
+          </div>
+        )}
+        
+        {manualQueryResult && (
+          <div className="text-xs space-y-2 border-t pt-2">
+            <div className="font-medium">Manual Query Results:</div>
+            <div className="space-y-2">
+              <div>
+                <strong>Direct User Query:</strong>
+                <div className={manualQueryResult.directQuery.success ? 'text-green-600' : 'text-red-600'}>
+                  {manualQueryResult.directQuery.success ? '✓' : '✗'} 
+                  Found {manualQueryResult.directQuery.count} tasks
+                  {manualQueryResult.directQuery.error && ` (Error: ${manualQueryResult.directQuery.error})`}
+                </div>
+              </div>
+              
+              <div>
+                <strong>Count Query:</strong>
+                <div className={manualQueryResult.countQuery.success ? 'text-green-600' : 'text-red-600'}>
+                  {manualQueryResult.countQuery.success ? '✓' : '✗'} 
+                  Count: {manualQueryResult.countQuery.count}
+                  {manualQueryResult.countQuery.error && ` (Error: ${manualQueryResult.countQuery.error})`}
+                </div>
+              </div>
+              
+              <div>
+                <strong>All Tasks Query:</strong>
+                <div className={manualQueryResult.allTasksQuery.success ? 'text-green-600' : 'text-red-600'}>
+                  {manualQueryResult.allTasksQuery.success ? '✓' : '✗'} 
+                  Found {manualQueryResult.allTasksQuery.count} total tasks
+                  {manualQueryResult.allTasksQuery.error && ` (Error: ${manualQueryResult.allTasksQuery.error})`}
+                </div>
+              </div>
+              
+              {manualQueryResult.directQuery.sampleTasks?.length > 0 && (
+                <div>
+                  <strong>Sample Tasks:</strong>
+                  <pre className="bg-background/50 p-2 rounded mt-1 overflow-x-auto text-xs">
+                    {JSON.stringify(manualQueryResult.directQuery.sampleTasks, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
@@ -475,6 +663,8 @@ export default function TaskHistory() {
           </Button>
         </div>
       </motion.div>
+
+      <DebugInfo user={user} tasks={tasks} loading={loading} error={error} />
 
       {showDiagnostic && <DiagnosticPanel />}
 

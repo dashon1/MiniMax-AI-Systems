@@ -5,14 +5,14 @@
         "id": "1",
         "content": "Comprehensive Task History Bug Investigation",
         "details": "Since previous authentication/RLS fixes haven't resolved the issue, conduct a thorough investigation covering: 1. Frontend code inspection (useTasks.ts, TaskHistory.tsx) 2. Backend data verification (Supabase tables, RLS policies) 3. Network/API debugging (console logs, network requests) 4. Alternative debugging approaches (different user sessions, browser dev tools) 5. Cross-reference with working features to identify differences",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "2": {
         "id": "2",
         "content": "Frontend Deep Dive Analysis",
         "details": "Examine the complete frontend data flow: 1. Check useTasks.ts hook implementation 2. Verify TaskHistory.tsx component logic 3. Inspect React state management 4. Check for console errors and warnings 5. Analyze component mounting and data loading sequence",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "3": {
