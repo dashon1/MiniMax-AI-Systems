@@ -5,21 +5,21 @@
         "id": "1",
         "content": "Investigate Task Processing Pipeline Failure",
         "details": "Tasks are being created and appear in history, but no actual processing/execution is happening. Need to investigate: 1. Task processor edge function status 2. Task execution triggers 3. Agent routing and processing logic 4. Task status updates and result generation 5. API connections and processing workflows",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "2": {
         "id": "2",
         "content": "Diagnose Task Execution Workflow",
         "details": "Check the complete task execution pipeline: 1. Verify task-processor edge function is working 2. Check if tasks are being triggered for processing 3. Analyze task status transitions (pending → processing → completed) 4. Verify agent routing and task assignment logic 5. Check for any errors in the processing pipeline",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "3": {
         "id": "3",
         "content": "Fix Task Processing Issues",
         "details": "Based on investigation findings, implement fixes for: 1. Broken edge function calls 2. Task trigger mechanisms 3. Agent processing logic 4. Status update mechanisms 5. Result generation and storage",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "4": {
